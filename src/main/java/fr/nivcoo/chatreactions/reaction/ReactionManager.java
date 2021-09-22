@@ -2,6 +2,8 @@ package fr.nivcoo.chatreactions.reaction;
 
 import fr.nivcoo.chatreactions.ChatReactions;
 import fr.nivcoo.chatreactions.utils.Config;
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -95,6 +97,12 @@ public class ReactionManager implements Listener {
             s.close();
         } catch (FileNotFoundException ignored) {
         }
+    }
+
+    public void sendConsoleCommand(String command, OfflinePlayer player) {
+        Bukkit.getScheduler().runTask(chatReactions, () -> Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(),
+                command.replaceAll("%player%", player.getName())));
+
     }
 
     public void startReactionEndTimer(String threadName, int timeout) {
