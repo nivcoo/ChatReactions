@@ -107,10 +107,11 @@ public class Reaction {
 
     public void stop() {
 
-        String message;
+        String message = null;
+        boolean sendTotalMessage = config.getBoolean("messages.chat.top.send_total_message");
         if (players.size() == 0)
             message = config.getString("messages.chat.no_player");
-        else {
+        else if (sendTotalMessage) {
             List<String> messages = config.getStringList("messages.chat.top.message");
             StringBuilder topMessage = new StringBuilder();
             int number = 0;

@@ -21,6 +21,16 @@ rewards:
       commands:
         - "cr give to %player% Vote 1"
         - "eco give %player% 1500"
+    '2':
+      message: "1 Clé de Vote + 1.500$"
+      commands:
+        - "cr give to %player% Vote 1"
+        - "eco give %player% 1500"
+    '3':
+      message: "1 Clé de Vote + 1.500$"
+      commands:
+        - "cr give to %player% Vote 1"
+        - "eco give %player% 1500"
 
 messages:
   commands:
@@ -52,15 +62,16 @@ messages:
         - '&7&l---»                                                   '
         - '                                                       '
 
-    no_player: "&7[&c&lES&7] Aucun joueur n'a fait la Réaction !"
+    no_player: '&7[&c&lRéaction&7] &cPersonne n''a trouvé le mot à temps.'
     top:
       template: "&f&l| &bN°{0} &e{1} &7- &a{2}s &7- &d{3}"
+      send_total_message: true
       message:
         - '&r '
         - "&7---»"
         - "&r "
         - "&dLa réaction est terminé !"
-        - "&7 Le mot était : {0}"
+        - "&7 Le mot était : {0} &7(&b/reaction&7)"
         - "&r "
         - "&a&l&nCLASSEMENT RÉACTIONS :"
         - "&r "
