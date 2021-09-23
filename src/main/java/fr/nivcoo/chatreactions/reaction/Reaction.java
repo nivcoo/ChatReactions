@@ -113,9 +113,12 @@ public class Reaction {
 
         String message = null;
         boolean sendTotalMessage = config.getBoolean("messages.chat.top.send_total_message");
+        int numberOfWinner = config.getKeys("rewards.top").size();
         if (players.size() == 0)
             message = config.getString("messages.chat.no_player");
-        else if (sendTotalMessage) {
+        else if (!sendTotalMessage && players.size() < numberOfWinner) {
+            message = config.getString("messages.chat.top.no_all_player");
+        } else if (sendTotalMessage) {
             List<String> messages = config.getStringList("messages.chat.top.message");
             StringBuilder topMessage = new StringBuilder();
             int number = 0;
@@ -128,7 +131,6 @@ public class Reaction {
                 topMessage.append(getTopLineOfPlayer(uuid));
                 if (number < players.size())
                     topMessage.append("\n");
-
             }
 
             message = multipleLineStringFromList(messages).replace("{0}", word).replace("{1}", topMessage);

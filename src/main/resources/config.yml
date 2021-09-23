@@ -17,20 +17,17 @@ sounds:
 rewards:
   top:
     '1':
-      message: "1 Clé de Vote + 1.500$"
+      message: "1.500$"
       commands:
-        - "cr give to %player% Vote 1"
         - "eco give %player% 1500"
     '2':
-      message: "1 Clé de Vote + 1.500$"
+      message: "1.000$"
       commands:
-        - "cr give to %player% Vote 1"
-        - "eco give %player% 1500"
+        - "eco give %player% 1000"
     '3':
-      message: "1 Clé de Vote + 1.500$"
+      message: "500$"
       commands:
-        - "cr give to %player% Vote 1"
-        - "eco give %player% 1500"
+        - "eco give %player% 500"
 
 messages:
   commands:
@@ -59,13 +56,18 @@ messages:
         - '                                                       '
         - '&f&l|&e Vous devez être le plus rapide pour remporter               '
         - '&eles récompenses &e!                                            '
+        - '                                                       '
+        - '&f&l|&bNombre de Gagnants : 3                                             '
         - '&7&l---»                                                   '
         - '                                                       '
 
     no_player: '&7[&c&lRéaction&7] &cPersonne n''a trouvé le mot à temps.'
+
     top:
       template: "&f&l| &bN°{0} &e{1} &7- &a{2}s &7- &d{3}"
-      send_total_message: true
+      send_total_message: false
+      # send this message if send_total_message is set to false
+      no_all_player: "&7[&c&lRéaction&7] &cToutes les récompenses n'ont pas été données à temps !"
       message:
         - '&r '
         - "&7---»"
