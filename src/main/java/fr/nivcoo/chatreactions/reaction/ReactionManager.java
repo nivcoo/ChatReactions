@@ -39,15 +39,16 @@ public class ReactionManager implements Listener {
         runReactionTasks(false);
     }
 
-    public void runReactionTasks(boolean userInterval) {
-
+    public void runReactionTasks(boolean useInterval) {
+        stopReactionTasks();
         String threadName = "Reactions Start Thread";
 
         int time_limit = config.getInt("time_limit");
         reactionsThread = new Thread(() -> {
+            boolean useInter = useInterval;
             while (!Thread.interrupted()) {
                 try {
-                    if (userInterval) {
+                    if (useInter) {
                         int intervalMin = config.getInt("interval.min");
                         int intervalMax = config.getInt("interval.max");
                         Random r = new Random();
@@ -59,11 +60,9 @@ public class ReactionManager implements Listener {
                     currentReaction = new Reaction();
                     currentReaction.start();
                     startReactionEndTimer(threadName, time_limit);
-                    if (!userInterval) {
-                        break;
-                    }
+                    useInter = true;
                 } catch (InterruptedException ex) {
-                    return;
+                    break;
                 }
             }
         }, threadName);
@@ -121,8 +120,8 @@ public class ReactionManager implements Listener {
     }
 
     public void disablePlugin() {
-        stopReactionTasks();
         cancelDelayedReactionTaskTimer();
+        stopReactionTasks();
     }
 
 
