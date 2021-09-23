@@ -55,12 +55,12 @@ public class ReactionManager implements Listener {
                         int interval = r.nextInt(intervalMax - intervalMin) + intervalMin;
                         Thread.sleep(interval * 1000L);
                     }
-                    if (currentReaction != null)
-                        continue;
-                    currentReaction = new Reaction();
-                    currentReaction.start();
-                    startReactionEndTimer(threadName, time_limit);
-                    useInter = true;
+                    if (currentReaction == null) {
+                        currentReaction = new Reaction();
+                        currentReaction.start();
+                        startReactionEndTimer(threadName, time_limit);
+                        useInter = true;
+                    }
                 } catch (InterruptedException ex) {
                     break;
                 }
