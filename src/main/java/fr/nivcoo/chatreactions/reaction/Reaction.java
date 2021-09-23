@@ -62,7 +62,7 @@ public class Reaction {
         String points = config.getString(templatePointPath + "points");
         String type = point;
         int numberOfWinner = chatReactions.getReactionManager().getRewardTopSize();
-        int earnedPoints = numberOfWinner - players.size() + 1;
+        int earnedPoints = numberOfWinner - place + 1;
         if (earnedPoints > 1)
             type = points;
         String pointMessage = config.getString(templatePointPath + "display", String.valueOf(earnedPoints), type);
@@ -144,9 +144,10 @@ public class Reaction {
             message = multipleLineStringFromList(messages).replace("{0}", word).replace("{1}", topMessage);
 
         }
-
+        int place = 0;
         for (UUID uuid : players.keySet()) {
-            int earnedPoints = chatReactions.getReactionManager().getRewardTopSize() - players.size() + 1;
+            place++;
+            int earnedPoints = chatReactions.getReactionManager().getRewardTopSize() - place + 1;
             chatReactions.getCacheManager().updatePlayerCount(uuid, earnedPoints);
         }
         if (message != null)
