@@ -66,8 +66,9 @@ messages:
     top:
       template: "&f&l| &bN°{0} &e{1} &7- &a{2}s &7- &d{3}"
       send_total_message: false
-      # send this message if send_total_message is set to false
+      # send these messages if send_total_message is set to false
       no_all_player: "&7[&c&lRéaction&7] &cToutes les récompenses n'ont pas été données à temps !"
+      all_rewards: "&7[&c&lRéaction&7] &aToutes les récompenses ont été données !"
       message:
         - '&r '
         - "&7---»"

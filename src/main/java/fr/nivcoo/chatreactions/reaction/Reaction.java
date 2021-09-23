@@ -57,7 +57,16 @@ public class Reaction {
     public String getTopLineOfPlayer(UUID uuid) {
         int place = getPlaceOfPlayer(uuid);
         OfflinePlayer p = Bukkit.getOfflinePlayer(uuid);
-        return config.getString("messages.chat.top.template", String.valueOf(place), p.getName(), String.valueOf(players.get(uuid)), getRewardMessageForPlace(place));
+        String templatePointPath = "messages.chat.top.template_points.";
+        String point = config.getString(templatePointPath + "point");
+        String points = config.getString(templatePointPath + "points");
+        String type = point;
+        int numberOfWinner = chatReactions.getReactionManager().getRewardTopSize();
+        int earnedPoints = numberOfWinner - players.size() + 1;
+        if (earnedPoints > 1)
+            type = points;
+        String pointMessage = config.getString(templatePointPath + "display", String.valueOf(earnedPoints), type);
+        return config.getString("messages.chat.top.template", String.valueOf(place), p.getName(), String.valueOf(players.get(uuid)), getRewardMessageForPlace(place), pointMessage);
     }
 
     public int getPlaceOfPlayer(UUID u) {
@@ -111,22 +120,21 @@ public class Reaction {
 
     public void stop() {
 
-        String message = null;
+        String message;
         boolean sendTotalMessage = config.getBoolean("messages.chat.top.send_total_message");
-        int numberOfWinner = config.getKeys("rewards.top").size();
+        int numberOfWinner = chatReactions.getReactionManager().getRewardTopSize();
         if (players.size() == 0)
             message = config.getString("messages.chat.no_player");
-        else if (!sendTotalMessage && players.size() < numberOfWinner) {
-            message = config.getString("messages.chat.top.no_all_player");
-        } else if (sendTotalMessage) {
+        else if (!sendTotalMessage) {
+            if (players.size() < numberOfWinner)
+                message = config.getString("messages.chat.top.no_all_player");
+            else
+                message = config.getString("messages.chat.top.all_rewards");
+        } else {
             List<String> messages = config.getStringList("messages.chat.top.message");
             StringBuilder topMessage = new StringBuilder();
             int number = 0;
             for (UUID uuid : players.keySet()) {
-
-                int earnedPoints = chatReactions.getReactionManager().getRewardTopSize() - players.size() + 1;
-
-                chatReactions.getCacheManager().updatePlayerCount(uuid, earnedPoints);
                 number++;
                 topMessage.append(getTopLineOfPlayer(uuid));
                 if (number < players.size())
@@ -135,6 +143,11 @@ public class Reaction {
 
             message = multipleLineStringFromList(messages).replace("{0}", word).replace("{1}", topMessage);
 
+        }
+
+        for (UUID uuid : players.keySet()) {
+            int earnedPoints = chatReactions.getReactionManager().getRewardTopSize() - players.size() + 1;
+            chatReactions.getCacheManager().updatePlayerCount(uuid, earnedPoints);
         }
         if (message != null)
             Bukkit.getServer().broadcastMessage(message);
