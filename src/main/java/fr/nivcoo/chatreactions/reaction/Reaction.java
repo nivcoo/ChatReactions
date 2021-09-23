@@ -38,16 +38,22 @@ public class Reaction {
         if (alreadyPlayer(p))
             return false;
 
-        double second = Math.round(((System.currentTimeMillis() - startMillis) / 1000.0) * 100.0) / 100.0;
-        players.put(p.getUniqueId(), second);
+        UUID uuid = p.getUniqueId();
 
-        Bukkit.broadcastMessage(getTopLineOfPlayer(p.getUniqueId()));
+        double second = Math.round(((System.currentTimeMillis() - startMillis) / 1000.0) * 100.0) / 100.0;
+        players.put(uuid, second);
+
+        Bukkit.broadcastMessage(getTopLineOfPlayer(uuid));
         String startSound = config.getString("sounds.win");
         p.playSound(p.getLocation(), Sound.valueOf(startSound), .4f, 1.7f);
         int position = players.size();
         List<String> commands = config.getStringList("rewards.top." + position + ".commands");
         for (String command : commands)
             chatReactions.getReactionManager().sendConsoleCommand(command, p);
+
+        int earnedPoints = chatReactions.getReactionManager().getRewardTopSize() - position + 1;
+        chatReactions.getCacheManager().updatePlayerCount(uuid, earnedPoints);
+
         if (position >= chatReactions.getReactionManager().getRewardTopSize()) {
             chatReactions.getReactionManager().stopCurrentReaction();
         }
@@ -143,12 +149,6 @@ public class Reaction {
 
             message = multipleLineStringFromList(messages).replace("{0}", word).replace("{1}", topMessage);
 
-        }
-        int place = 0;
-        for (UUID uuid : players.keySet()) {
-            place++;
-            int earnedPoints = chatReactions.getReactionManager().getRewardTopSize() - place + 1;
-            chatReactions.getCacheManager().updatePlayerCount(uuid, earnedPoints);
         }
         if (message != null)
             Bukkit.getServer().broadcastMessage(message);
