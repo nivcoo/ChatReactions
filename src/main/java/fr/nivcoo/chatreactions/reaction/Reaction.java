@@ -1,7 +1,7 @@
 package fr.nivcoo.chatreactions.reaction;
 
 import fr.nivcoo.chatreactions.ChatReactions;
-import fr.nivcoo.chatreactions.utils.Config;
+import fr.nivcoo.utilsz.config.Config;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;

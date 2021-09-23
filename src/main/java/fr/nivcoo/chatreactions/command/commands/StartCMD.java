@@ -1,19 +1,20 @@
 package fr.nivcoo.chatreactions.command.commands;
 
+
 import fr.nivcoo.chatreactions.ChatReactions;
 import fr.nivcoo.chatreactions.command.CCommand;
-import fr.nivcoo.chatreactions.utils.Config;
+import fr.nivcoo.utilsz.config.Config;
 import org.bukkit.command.CommandSender;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class StartCMD implements CCommand {
 
     @Override
     public List<String> getAliases() {
-        return Arrays.asList("start");
+        return Collections.singletonList("start");
     }
 
     @Override

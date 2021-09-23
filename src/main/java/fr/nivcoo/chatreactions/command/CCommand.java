@@ -1,7 +1,7 @@
 package fr.nivcoo.chatreactions.command;
 
 import fr.nivcoo.chatreactions.ChatReactions;
-import fr.nivcoo.chatreactions.utils.commands.Command;
+import fr.nivcoo.utilsz.commands.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 

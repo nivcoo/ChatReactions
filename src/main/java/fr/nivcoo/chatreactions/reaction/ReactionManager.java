@@ -1,7 +1,7 @@
 package fr.nivcoo.chatreactions.reaction;
 
 import fr.nivcoo.chatreactions.ChatReactions;
-import fr.nivcoo.chatreactions.utils.Config;
+import fr.nivcoo.utilsz.config.Config;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;

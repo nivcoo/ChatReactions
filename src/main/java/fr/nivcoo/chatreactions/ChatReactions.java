@@ -5,9 +5,9 @@ import fr.nivcoo.chatreactions.command.commands.StartCMD;
 import fr.nivcoo.chatreactions.command.commands.StopCMD;
 import fr.nivcoo.chatreactions.placeholder.PlaceHolderAPI;
 import fr.nivcoo.chatreactions.reaction.ReactionManager;
-import fr.nivcoo.chatreactions.utils.Config;
 import fr.nivcoo.chatreactions.utils.Database;
-import fr.nivcoo.chatreactions.utils.commands.CommandManager;
+import fr.nivcoo.utilsz.commands.CommandManager;
+import fr.nivcoo.utilsz.config.Config;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
