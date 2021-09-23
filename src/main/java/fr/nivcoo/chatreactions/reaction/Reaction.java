@@ -42,7 +42,6 @@ public class Reaction {
 
         double second = Math.round(((System.currentTimeMillis() - startMillis) / 1000.0) * 100.0) / 100.0;
         players.put(uuid, second);
-
         Bukkit.broadcastMessage(getTopLineOfPlayer(uuid));
         String startSound = config.getString("sounds.win");
         p.playSound(p.getLocation(), Sound.valueOf(startSound), .4f, 1.7f);
