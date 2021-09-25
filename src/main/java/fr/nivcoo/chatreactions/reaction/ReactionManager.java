@@ -55,7 +55,7 @@ public class ReactionManager implements Listener {
                         int interval = r.nextInt(intervalMax - intervalMin) + intervalMin;
                         Thread.sleep(interval * 1000L);
                     }
-                    if (currentReaction != null)
+                    if (currentReaction != null || config.getInt("player_needed") < Bukkit.getOnlinePlayers().size())
                         continue;
                     currentReaction = new Reaction();
                     currentReaction.start();

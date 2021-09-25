@@ -10,6 +10,8 @@ interval:
 # in seconds
 time_limit: 30
 
+player_needed: 5
+
 sounds:
   start: ENTITY_EXPERIENCE_ORB_PICKUP
   win: ENTITY_EXPERIENCE_ORB_PICKUP
