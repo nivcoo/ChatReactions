@@ -21,8 +21,8 @@ public class TimeUtil {
     public TimePair<Long, String> getTimeAndTypeBySecond(long s) {
         long m = Math.round(s / 60.0);
         long h = Math.round(m / 60.0);
-        long number = 0;
-        String type = null;
+        long number;
+        String type;
         if (h >= 1) {
             number = h;
             type = hour;
