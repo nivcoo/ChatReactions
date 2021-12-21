@@ -42,20 +42,22 @@ public class Reaction {
 
         double second = Math.round(((System.currentTimeMillis() - startMillis) / 1000.0) * 100.0) / 100.0;
         players.put(uuid, second);
+        int position = players.size();
+        ReactionManager reactionManager = chatReactions.getReactionManager();
+        if (position >= reactionManager.getRewardTopSize()) {
+            reactionManager.stopCurrentReaction();
+        }
         Bukkit.broadcastMessage(getTopLineOfPlayer(uuid));
         String startSound = config.getString("sounds.win");
         p.playSound(p.getLocation(), Sound.valueOf(startSound), .4f, 1.7f);
-        int position = players.size();
         List<String> commands = config.getStringList("rewards.top." + position + ".commands");
         for (String command : commands)
-            chatReactions.getReactionManager().sendConsoleCommand(command, p);
+            reactionManager.sendConsoleCommand(command, p);
 
-        int earnedPoints = chatReactions.getReactionManager().getRewardTopSize() - position + 1;
+        int earnedPoints = reactionManager.getRewardTopSize() - position + 1;
         chatReactions.getCacheManager().updatePlayerCount(uuid, earnedPoints);
 
-        if (position >= chatReactions.getReactionManager().getRewardTopSize()) {
-            chatReactions.getReactionManager().stopCurrentReaction();
-        }
+
         return true;
     }
 
