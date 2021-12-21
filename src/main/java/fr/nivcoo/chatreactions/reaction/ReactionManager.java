@@ -20,6 +20,7 @@ public class ReactionManager implements Listener {
     private List<String> words;
 
     private Reaction currentReaction;
+    private List<String> topConfig;
 
     private Thread reactionsThread;
     private Timer delayedReactionEndTimer;
@@ -27,6 +28,7 @@ public class ReactionManager implements Listener {
     public ReactionManager() {
         chatReactions = ChatReactions.get();
         config = chatReactions.getConfiguration();
+        topConfig = config.getKeys("rewards.top");
         loadWords();
         runReactionTasks(true);
     }
@@ -71,7 +73,7 @@ public class ReactionManager implements Listener {
     }
 
     public int getRewardTopSize() {
-        return config.getKeys("rewards.top").size();
+        return topConfig.size();
     }
 
     public void stopCurrentReaction() {
