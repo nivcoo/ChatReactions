@@ -3,6 +3,7 @@ package fr.nivcoo.chatreactions.placeholder;
 import fr.nivcoo.chatreactions.ChatReactions;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.OfflinePlayer;
+import org.jetbrains.annotations.NotNull;
 
 public class PlaceHolderAPI extends PlaceholderExpansion {
 
@@ -13,18 +14,18 @@ public class PlaceHolderAPI extends PlaceholderExpansion {
     }
 
     @Override
-    public String getAuthor() {
-        return "nivcoo";
+    public @NotNull String getAuthor() {
+        return chatReactions.getDescription().getAuthors().toString();
     }
 
     @Override
-    public String getIdentifier() {
+    public @NotNull String getIdentifier() {
         return "chatreactions";
     }
 
     @Override
-    public String getVersion() {
-        return "0.0.1";
+    public @NotNull String getVersion() {
+        return chatReactions.getDescription().getVersion();
     }
 
     @Override
