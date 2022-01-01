@@ -44,12 +44,13 @@ public class Reaction {
         players.put(uuid, second);
         int position = players.size();
         ReactionManager reactionManager = chatReactions.getReactionManager();
-        if (position >= reactionManager.getRewardTopSize()) {
-            reactionManager.stopCurrentReaction();
-        }
         Bukkit.broadcastMessage(getTopLineOfPlayer(uuid));
         String startSound = config.getString("sounds.win");
         p.playSound(p.getLocation(), Sound.valueOf(startSound), .4f, 1.7f);
+        if (position >= reactionManager.getRewardTopSize()) {
+            reactionManager.stopCurrentReaction();
+        }
+
         List<String> commands = config.getStringList("rewards.top." + position + ".commands");
         for (String command : commands)
             reactionManager.sendConsoleCommand(command, p);
