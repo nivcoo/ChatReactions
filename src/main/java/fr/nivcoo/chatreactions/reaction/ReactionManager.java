@@ -50,6 +50,7 @@ public class ReactionManager implements Listener {
             boolean useInter = useInterval;
             while (!Thread.interrupted()) {
                 try {
+
                     if (useInter) {
                         int intervalMin = config.getInt("interval.min");
                         int intervalMax = config.getInt("interval.max");
@@ -57,7 +58,7 @@ public class ReactionManager implements Listener {
                         int interval = r.nextInt(intervalMax - intervalMin) + intervalMin;
                         Thread.sleep(interval * 1000L);
                     }
-                    if (currentReaction != null || config.getInt("player_needed") > Bukkit.getOnlinePlayers().size())
+                    if (currentReaction != null || (config.getInt("player_needed") > Bukkit.getOnlinePlayers().size() && useInter))
                         continue;
                     currentReaction = new Reaction();
                     currentReaction.start();

@@ -102,7 +102,6 @@ public class Reaction {
         List<String> startMessages = config.getStringList(startMessagePath + "messages");
         List<String> hoverMessage = config.getStringList(startMessagePath + "hover");
         String startSound = config.getString("sounds.start");
-
         for (Player p : Bukkit.getOnlinePlayers()) {
             TextComponent message = new TextComponent(multipleLineStringFromList(startMessages));
             message.setHoverEvent(
