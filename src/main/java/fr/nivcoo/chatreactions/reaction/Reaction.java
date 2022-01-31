@@ -103,9 +103,9 @@ public class Reaction {
         List<String> hoverMessage = config.getStringList(startMessagePath + "hover");
         String startSound = config.getString("sounds.start");
         for (Player p : Bukkit.getOnlinePlayers()) {
-            TextComponent message = new TextComponent(multipleLineStringFromList(startMessages));
+            TextComponent message = new TextComponent(TextComponent.fromLegacyText(multipleLineStringFromList(startMessages)));
             message.setHoverEvent(
-                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder(multipleLineStringFromList(hoverMessage).replace("{0}", word)).create()));
+                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, TextComponent.fromLegacyText(multipleLineStringFromList(hoverMessage).replace("{0}", word))));
             p.spigot().sendMessage(message);
             p.playSound(p.getLocation(), Sound.valueOf(startSound), .4f, 1.7f);
         }
