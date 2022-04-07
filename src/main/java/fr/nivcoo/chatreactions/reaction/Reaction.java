@@ -40,15 +40,19 @@ public class Reaction {
         if (alreadyPlayer(p))
             return false;
 
-        UUID uuid = p.getUniqueId();
-        double second = Math.round(((System.currentTimeMillis() - startMillis) / 1000.0) * 100.0) / 100.0;
-        players.put(uuid, second);
+
         int position = players.size();
-        Bukkit.broadcastMessage(getTopLineOfPlayer(uuid));
-        String startSound = config.getString("sounds.win");
-        p.playSound(p.getLocation(), Sound.valueOf(startSound), .4f, 1.7f);
+
         if (position >= reactionManager.getRewardTopSize()) {
             reactionManager.stopCurrentReaction();
+        } else {
+            UUID uuid = p.getUniqueId();
+            double second = Math.round(((System.currentTimeMillis() - startMillis) / 1000.0) * 100.0) / 100.0;
+            players.put(uuid, second);
+            Bukkit.broadcastMessage(getTopLineOfPlayer(uuid));
+            String startSound = config.getString("sounds.win");
+            p.playSound(p.getLocation(), Sound.valueOf(startSound), .4f, 1.7f);
+
         }
 
 
@@ -129,7 +133,10 @@ public class Reaction {
 
             int position = 0;
             for (UUID uuid : players.keySet()) {
+                if(position >= numberOfWinner)
+                    break;
                 position++;
+
                 List<String> commands = config.getStringList("rewards.top." + position + ".commands");
                 for (String command : commands)
                     reactionManager.sendConsoleCommand(command, Bukkit.getOfflinePlayer(uuid));
