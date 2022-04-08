@@ -2,7 +2,6 @@ package fr.nivcoo.chatreactions.reaction;
 
 import fr.nivcoo.chatreactions.ChatReactions;
 import fr.nivcoo.utilsz.config.Config;
-import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
@@ -43,17 +42,17 @@ public class Reaction {
 
         int position = players.size();
 
-        if (position >= reactionManager.getRewardTopSize()) {
-            reactionManager.stopCurrentReaction();
-        } else {
+        if (position < reactionManager.getRewardTopSize()) {
             UUID uuid = p.getUniqueId();
             double second = Math.round(((System.currentTimeMillis() - startMillis) / 1000.0) * 100.0) / 100.0;
             players.put(uuid, second);
             Bukkit.broadcastMessage(getTopLineOfPlayer(uuid));
             String startSound = config.getString("sounds.win");
             p.playSound(p.getLocation(), Sound.valueOf(startSound), .4f, 1.7f);
-
         }
+
+        if (players.size() >= reactionManager.getRewardTopSize())
+            reactionManager.stopCurrentReaction();
 
 
         return true;
@@ -133,7 +132,7 @@ public class Reaction {
 
             int position = 0;
             for (UUID uuid : players.keySet()) {
-                if(position >= numberOfWinner)
+                if (position >= numberOfWinner)
                     break;
                 position++;
 

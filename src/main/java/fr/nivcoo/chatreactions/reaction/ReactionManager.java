@@ -135,6 +135,7 @@ public class ReactionManager implements Listener {
         Player p = e.getPlayer();
         if (!e.getMessage().equals(currentReaction.getWord()))
             return;
-        e.setCancelled(currentReaction.addPlayerToTop(p));
+        if(currentReaction.addPlayerToTop(p))
+            e.setCancelled(true);
     }
 }
