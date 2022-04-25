@@ -9,7 +9,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class Database {
-    private String DBPath = "";
+    private String DBPath;
     private Connection connection = null;
     private Statement statement = null;
 
@@ -47,22 +47,20 @@ public class Database {
 
     }
 
-    public ResultSet query(String requet) {
-        ResultSet resultat = null;
+    public void query(String request) {
         try {
-            resultat = statement.executeQuery(requet);
+            statement.executeQuery(request);
         } catch (SQLException ignored) {
         }
-        return resultat;
 
     }
 
     public void updatePlayerCount(UUID uuid, int count) {
         connect();
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement("REPLACE INTO classement VALUES (?, ?);");
-            preparedStatement.setString(1, uuid.toString());
-            preparedStatement.setInt(2, count);
+            PreparedStatement preparedStatement = connection.prepareStatement("UPDATE classement SET count = ? WHERE UUID = ?;");
+            preparedStatement.setInt(1, count);
+            preparedStatement.setString(2, uuid.toString());
             preparedStatement.executeUpdate();
             preparedStatement.close();
 

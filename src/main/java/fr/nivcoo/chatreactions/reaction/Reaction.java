@@ -23,7 +23,10 @@ public class Reaction {
     private LinkedHashMap<UUID, Double> players;
     private Long startMillis;
 
+    private boolean stopped;
+
     public Reaction() {
+        stopped = false;
         chatReactions = ChatReactions.get();
         reactionManager = chatReactions.getReactionManager();
         config = chatReactions.getConfiguration();
@@ -98,7 +101,7 @@ public class Reaction {
     }
 
     public void start() {
-
+        stopped = false;
         players = new LinkedHashMap<>();
         String startMessagePath = "messages.chat.start_messages.";
 
@@ -122,7 +125,9 @@ public class Reaction {
     }
 
     public void stop() {
-
+        if(stopped)
+            return;
+        stopped = true;
         String message;
         boolean sendTotalMessage = config.getBoolean("messages.chat.top.send_total_message");
         int numberOfWinner = reactionManager.getRewardTopSize();
