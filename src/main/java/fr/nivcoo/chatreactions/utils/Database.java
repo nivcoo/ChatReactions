@@ -58,9 +58,9 @@ public class Database {
     public void updatePlayerCount(UUID uuid, int count) {
         connect();
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement("UPDATE classement SET count = ? WHERE UUID = ?;");
-            preparedStatement.setInt(1, count);
-            preparedStatement.setString(2, uuid.toString());
+            PreparedStatement preparedStatement = connection.prepareStatement("REPLACE INTO classement VALUES (?, ?);");
+            preparedStatement.setString(1, uuid.toString());
+            preparedStatement.setInt(2, count);
             preparedStatement.executeUpdate();
             preparedStatement.close();
 
