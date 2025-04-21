@@ -1,6 +1,5 @@
 package fr.nivcoo.chatreactions.actions;
 
-import com.google.gson.JsonObject;
 import fr.nivcoo.chatreactions.ChatReactions;
 import fr.nivcoo.utilsz.redis.RedisAction;
 import fr.nivcoo.utilsz.redis.RedisSerializable;
