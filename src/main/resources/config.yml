@@ -1,5 +1,23 @@
 # %chatreactions_get_score%
 
+database:
+  type: "sqlite" # ou "mysql"
+  sqlite:
+    path: "database.db"
+  mysql:
+    host: "localhost"
+    port: 3306
+    database: "chatreactions"
+    username: "root"
+    password: "password"
+
+redis:
+  enabled: false
+  host: 127.0.0.1
+  port: 6379
+  username: "" # optionnal, leave empty if not used
+  password: "" # optionnal, leave empty if not used
+
 words_file_name: "words/dictionary.txt"
 
 interval:

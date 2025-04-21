@@ -4,77 +4,94 @@ import fr.nivcoo.chatreactions.ChatReactions;
 import fr.nivcoo.utilsz.config.Config;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.*;
 
-public class ReactionManager implements Listener {
+public class ReactionManager {
 
-    private ChatReactions chatReactions;
-    private Config config;
+    private final ChatReactions plugin;
+    private final Config config;
+
+    private final List<String> topConfig;
     private List<String> words;
 
     private Reaction currentReaction;
-    private List<String> topConfig;
-
-    private Thread reactionsThread;
-    private Timer delayedReactionEndTimer;
+    private Thread reactionThread;
+    private Timer reactionTimeout;
 
     public ReactionManager() {
-        chatReactions = ChatReactions.get();
-        config = chatReactions.getConfiguration();
-        topConfig = config.getKeys("rewards.top");
+        this.plugin = ChatReactions.get();
+        this.config = plugin.getConfiguration();
+        this.topConfig = config.getKeys("rewards.top");
+
         loadWords();
-        runReactionTasks(true);
+        startReactionTask(false);
+    }
+
+    public void loadWords() {
+        words = new ArrayList<>();
+        try {
+            File file = new File(plugin.getDataFolder(), config.getString("words_file_name"));
+            Scanner scanner = new Scanner(file);
+            while (scanner.hasNext()) {
+                words.add(scanner.next());
+            }
+            scanner.close();
+        } catch (FileNotFoundException ignored) {
+        }
     }
 
     public List<String> getWords() {
         return words;
     }
 
-    public void runReactionTasks() {
-        runReactionTasks(false);
+    public int getRewardTopSize() {
+        return topConfig.size();
     }
 
-    public void runReactionTasks(boolean useInterval) {
-        stopReactionTasks();
-        String threadName = "Reactions Start Thread";
+    public Reaction getCurrentReaction() {
+        return currentReaction;
+    }
 
-        int time_limit = config.getInt("time_limit");
-        reactionsThread = new Thread(() -> {
-            boolean useInter = useInterval;
+    public void startReactionTask() {
+        startReactionTask(true);
+    }
+
+    public void startReactionTask(boolean forceMode) {
+        stopReactionTask();
+
+        String threadName = "Reactions Start Thread";
+        int timeLimit = config.getInt("time_limit");
+
+        reactionThread = new Thread(() -> {
+            boolean waitBeforeStart = !forceMode;
+
             while (!Thread.interrupted()) {
                 try {
-
-                    if (useInter) {
-                        int intervalMin = config.getInt("interval.min");
-                        int intervalMax = config.getInt("interval.max");
-                        Random r = new Random();
-                        int interval = r.nextInt(intervalMax - intervalMin) + intervalMin;
+                    if (waitBeforeStart) {
+                        int min = config.getInt("interval.min");
+                        int max = config.getInt("interval.max");
+                        int interval = new Random().nextInt(max - min) + min;
                         Thread.sleep(interval * 1000L);
                     }
-                    if (currentReaction != null || (config.getInt("player_needed") > Bukkit.getOnlinePlayers().size() && useInter))
-                        continue;
+
+                    if (currentReaction != null) continue;
+                    if (config.getInt("player_needed") > Bukkit.getOnlinePlayers().size() && !forceMode) continue;
+
                     currentReaction = new Reaction();
                     currentReaction.start();
-                    startReactionEndTimer(threadName, time_limit);
-                    useInter = true;
-                } catch (InterruptedException ex) {
+                    scheduleReactionEnd(threadName, timeLimit);
+                    waitBeforeStart = true;
+
+                } catch (InterruptedException ignored) {
                     break;
                 }
             }
         }, threadName);
-        reactionsThread.start();
 
-    }
-
-    public int getRewardTopSize() {
-        return topConfig.size();
+        reactionThread.start();
     }
 
     public void stopCurrentReaction() {
@@ -83,59 +100,34 @@ public class ReactionManager implements Listener {
         currentReaction = null;
     }
 
-    public void stopReactionTasks() {
-        if (reactionsThread != null)
-            reactionsThread.interrupt();
+    public void stopReactionTask() {
+        if (reactionThread != null)
+            reactionThread.interrupt();
         stopCurrentReaction();
     }
 
-    public void loadWords() {
-        try {
-            Scanner s = new Scanner(new File(chatReactions.getDataFolder() + "/" + config.getString("words_file_name")));
-            words = new ArrayList<>();
-            while (s.hasNext()) {
-                words.add(s.next());
-            }
-            s.close();
-        } catch (FileNotFoundException ignored) {
-        }
+    public void disablePlugin() {
+        if (reactionTimeout != null)
+            reactionTimeout.cancel();
+        stopReactionTask();
     }
 
     public void sendConsoleCommand(String command, OfflinePlayer player) {
-        Bukkit.getScheduler().runTask(chatReactions, () -> Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(),
-                command.replaceAll("%player%", player.getName())));
-
+        Bukkit.getScheduler().runTask(plugin, () ->
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command.replace("%player%", player.getName())));
     }
 
-    public void startReactionEndTimer(String threadName, int timeout) {
-        delayedReactionEndTimer = new Timer(threadName);
-        TimerTask task = new TimerTask() {
+    public String formatMultiline(List<String> list) {
+        return String.join("\n", list);
+    }
+
+    public void scheduleReactionEnd(String threadName, int delaySeconds) {
+        reactionTimeout = new Timer(threadName);
+        reactionTimeout.schedule(new TimerTask() {
+            @Override
             public void run() {
                 stopCurrentReaction();
             }
-        };
-        delayedReactionEndTimer.schedule(task, 1000L * timeout);
-    }
-
-    public void cancelDelayedReactionTaskTimer() {
-        if (delayedReactionEndTimer != null)
-            delayedReactionEndTimer.cancel();
-    }
-
-    public void disablePlugin() {
-        cancelDelayedReactionTaskTimer();
-        stopReactionTasks();
-    }
-
-
-    @EventHandler
-    public void onAsyncPlayerChat(AsyncPlayerChatEvent e) {
-        if (currentReaction == null)
-            return;
-        Player p = e.getPlayer();
-        if (!e.getMessage().equals(currentReaction.getWord()))
-            return;
-        if(currentReaction.addPlayerToTop(p))
-            e.setCancelled(true);
+        }, delaySeconds * 1000L);
     }
 }

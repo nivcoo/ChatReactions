@@ -5,17 +5,14 @@ import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.*;
+
 public class PlaceHolderAPI extends PlaceholderExpansion {
 
-    private ChatReactions chatReactions;
+    private final ChatReactions plugin;
 
     public PlaceHolderAPI() {
-        chatReactions = ChatReactions.get();
-    }
-
-    @Override
-    public @NotNull String getAuthor() {
-        return chatReactions.getDescription().getAuthors().toString();
+        this.plugin = ChatReactions.get();
     }
 
     @Override
@@ -24,16 +21,72 @@ public class PlaceHolderAPI extends PlaceholderExpansion {
     }
 
     @Override
+    public @NotNull String getAuthor() {
+        return plugin.getDescription().getAuthors().toString();
+    }
+
+    @Override
     public @NotNull String getVersion() {
-        return chatReactions.getDescription().getVersion();
+        return plugin.getDescription().getVersion();
     }
 
     @Override
     public String onRequest(OfflinePlayer player, String identifier) {
-        if (identifier.equals("get_score")) {
-            return String.valueOf(chatReactions.getCacheManager().getPlayerCount(player.getUniqueId()));
+        if (player == null) return "";
+
+        // %chatreactions_get_score%
+        if (identifier.equalsIgnoreCase("get_score")) {
+            return String.valueOf(plugin.getCacheManager().getPlayerScore(player.getUniqueId()));
         }
+
+        // %chatreactions_top_name_1%
+        if (identifier.startsWith("top_name_")) {
+            try {
+                int rank = Integer.parseInt(identifier.substring("top_name_".length()));
+                return getTopPlayerName(rank);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+
+        // %chatreactions_top_score_1%
+        if (identifier.startsWith("top_score_")) {
+            try {
+                int rank = Integer.parseInt(identifier.substring("top_score_".length()));
+                return String.valueOf(getTopPlayerScore(rank));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+
         return null;
     }
 
+
+    private String getTopPlayerName(int rank) {
+        Map<UUID, Integer> scores = plugin.getCacheManager().getSortedRanking();
+
+        int index = 1;
+        for (Map.Entry<UUID, Integer> entry : scores.entrySet()) {
+            if (index == rank) {
+                return Optional.ofNullable(plugin.getServer().getOfflinePlayer(entry.getKey()).getName())
+                        .orElse("Unknown");
+            }
+            index++;
+        }
+
+        return "";
+    }
+
+    private int getTopPlayerScore(int rank) {
+        Map<UUID, Integer> scores = plugin.getCacheManager().getSortedRanking();
+
+        int index = 1;
+        for (Map.Entry<UUID, Integer> entry : scores.entrySet()) {
+            if (index == rank) {
+                return entry.getValue();
+            }
+            index++;
+        }
+
+        return 0;
+    }
 }

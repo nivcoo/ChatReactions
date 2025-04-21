@@ -1,55 +1,73 @@
 package fr.nivcoo.chatreactions.cache;
 
 import fr.nivcoo.chatreactions.ChatReactions;
+import fr.nivcoo.chatreactions.actions.ReactionWinAction;
 import fr.nivcoo.chatreactions.utils.Database;
-import org.bukkit.Bukkit;
-import org.bukkit.event.EventHandler;
+
+import java.util.LinkedHashMap;
+
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerJoinEvent;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class CacheManager implements Listener {
 
-    private ChatReactions chatReactions;
+    private final ChatReactions plugin;
+    private final Database database;
 
-    private Database db;
-
-    private HashMap<UUID, Integer> playersClassementCache;
+    private Map<UUID, Integer> rankingCache = new LinkedHashMap<>();
 
     public CacheManager() {
-        chatReactions = ChatReactions.get();
-        db = chatReactions.getDatabase();
-        playersClassementCache = new HashMap<>();
-        getAllPlayersCount();
+        this.plugin = ChatReactions.get();
+        this.database = plugin.getDatabase();
+
+        loadFullRanking();
     }
 
-    public void getAllPlayersCount() {
-        playersClassementCache = db.getAllPlayersCount(Bukkit.getServer().getOnlinePlayers());
+    public void loadFullRanking() {
+        rankingCache.clear();
+        rankingCache.putAll(database.getAllPlayersScore());
+        sortRankingCache();
+        plugin.getLogger().info("[ChatReactions] Loaded ranking for " + rankingCache.size() + " players.");
     }
 
-    public void updatePlayerCount(UUID uuid, int addNumber) {
-        int newCount = getPlayerCount(uuid) + addNumber;
-        db.updatePlayerCount(uuid, newCount);
-        playersClassementCache.put(uuid, newCount);
+
+    public void redisUpdatePlayerScore(UUID uuid, int value) {
+        rankingCache.put(uuid, value);
+        sortRankingCache();
     }
 
-    public int getPlayerCount(UUID uuid) {
-        Integer count = playersClassementCache.get(uuid);
-        if (count == null) {
-            count = db.getPlayerCount(uuid);
-            playersClassementCache.put(uuid, count);
+    public void updatePlayerScore(UUID uuid, int value) {
+        int newCount = getPlayerScore(uuid) + value;
+        database.updatePlayerScore(uuid, newCount);
+        rankingCache.put(uuid, newCount);
+
+        if (plugin.isRedisEnabled()) {
+            plugin.getRedisChannel().publish(new ReactionWinAction(uuid, newCount));
         }
-        return count;
+
+        sortRankingCache();
     }
 
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent e) {
-        UUID uuid = e.getPlayer().getUniqueId();
-        int count = db.getPlayerCount(uuid);
-        playersClassementCache.put(uuid, count);
-
+    private void sortRankingCache() {
+        rankingCache = rankingCache.entrySet().stream()
+                .sorted(Map.Entry.<UUID, Integer>comparingByValue().reversed())
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (e1, e2) -> e1,
+                        LinkedHashMap::new
+                ));
     }
 
+    public int getPlayerScore(UUID uuid) {
+        return rankingCache.getOrDefault(uuid, 0);
+    }
+
+    public Map<UUID, Integer> getSortedRanking() {
+        return rankingCache;
+    }
 }

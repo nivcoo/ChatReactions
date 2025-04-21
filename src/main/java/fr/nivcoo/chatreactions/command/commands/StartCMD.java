@@ -49,7 +49,7 @@ public class StartCMD implements CCommand {
 
     public void execute(ChatReactions plugin, CommandSender sender, String[] args) {
         Config config = plugin.getConfiguration();
-        plugin.getReactionManager().runReactionTasks();
+        plugin.getReactionManager().startReactionTask();
         sender.sendMessage(config.getString("messages.commands.start.success"));
     }
 

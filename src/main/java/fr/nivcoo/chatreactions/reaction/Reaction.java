@@ -2,8 +2,9 @@ package fr.nivcoo.chatreactions.reaction;
 
 import fr.nivcoo.chatreactions.ChatReactions;
 import fr.nivcoo.utilsz.config.Config;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.TextComponent;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
@@ -13,168 +14,177 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 public class Reaction {
-    private ChatReactions chatReactions;
-    private ReactionManager reactionManager;
-    private Config config;
-    private String word;
-    private LinkedHashMap<UUID, Double> players;
-    private Long startMillis;
 
+    private final ChatReactions plugin;
+    private final ReactionManager manager;
+    private final Config config;
+
+    private final String word;
+    private final long startMillis;
     private boolean stopped;
 
+    private final LinkedHashMap<UUID, Double> winners;
+
+    private final int onlinePlayersAtStart;
+
     public Reaction() {
-        stopped = false;
-        chatReactions = ChatReactions.get();
-        reactionManager = chatReactions.getReactionManager();
-        config = chatReactions.getConfiguration();
-        selectionRandomWord();
-        startMillis = System.currentTimeMillis();
+        this.plugin = ChatReactions.get();
+        this.manager = plugin.getReactionManager();
+        this.config = plugin.getConfiguration();
+        this.word = selectRandomWord();
+        this.startMillis = System.currentTimeMillis();
+        this.stopped = false;
+        this.winners = new LinkedHashMap<>();
+        this.onlinePlayersAtStart = Bukkit.getOnlinePlayers().size();
     }
 
     public String getWord() {
         return word;
     }
 
-    public boolean addPlayerToTop(Player p) {
-        if (alreadyPlayer(p))
-            return false;
+    public boolean alreadyPlayer(Player player) {
+        return winners.containsKey(player.getUniqueId());
+    }
+
+    public boolean addPlayerToTop(Player player) {
+        if (alreadyPlayer(player)) return false;
+
+        int position = winners.size();
+        if (position < manager.getRewardTopSize()) {
+            UUID uuid = player.getUniqueId();
+            double seconds = Math.round(((System.currentTimeMillis() - startMillis) / 1000.0) * 100.0) / 100.0;
+            winners.put(uuid, seconds);
 
 
-        int position = players.size();
+            Component component = LegacyComponentSerializer.legacySection().deserialize(getTopLineOfPlayer(uuid));
+            Bukkit.getServer().sendMessage(component);
 
-        if (position < reactionManager.getRewardTopSize()) {
-            UUID uuid = p.getUniqueId();
-            double second = Math.round(((System.currentTimeMillis() - startMillis) / 1000.0) * 100.0) / 100.0;
-            players.put(uuid, second);
-            Bukkit.broadcastMessage(getTopLineOfPlayer(uuid));
-            String startSound = config.getString("sounds.win");
-            p.playSound(p.getLocation(), Sound.valueOf(startSound), .4f, 1.7f);
+            String winSound = config.getString("sounds.win");
+            player.playSound(player.getLocation(), Sound.valueOf(winSound), 0.4f, 1.7f);
         }
 
-        if (players.size() >= reactionManager.getRewardTopSize())
-            reactionManager.stopCurrentReaction();
-
+        if (winners.size() >= manager.getRewardTopSize()) {
+            manager.stopCurrentReaction();
+        } else if (winners.size() >= onlinePlayersAtStart) {
+            manager.stopCurrentReaction();
+        }
 
         return true;
     }
 
     public String getTopLineOfPlayer(UUID uuid) {
         int place = getPlaceOfPlayer(uuid);
-        OfflinePlayer p = Bukkit.getOfflinePlayer(uuid);
-        String templatePointPath = "messages.chat.top.template_points.";
-        String point = config.getString(templatePointPath + "point");
-        String points = config.getString(templatePointPath + "points");
-        String type = point;
-        int numberOfWinner = reactionManager.getRewardTopSize();
-        int earnedPoints = numberOfWinner - place + 1;
-        if (earnedPoints > 1)
-            type = points;
-        String pointMessage = config.getString(templatePointPath + "display", String.valueOf(earnedPoints), type);
-        return config.getString("messages.chat.top.template", String.valueOf(place), p.getName(), String.valueOf(players.get(uuid)), getRewardMessageForPlace(place), pointMessage);
+        OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
+        int rewardTop = manager.getRewardTopSize();
+        int earnedPoints = rewardTop - place + 1;
+
+        String type = earnedPoints > 1
+                ? config.getString("messages.chat.top.template_points.points")
+                : config.getString("messages.chat.top.template_points.point");
+
+        String pointMessage = config.getString("messages.chat.top.template_points.display",
+                String.valueOf(earnedPoints), type);
+
+        return config.getString("messages.chat.top.template",
+                String.valueOf(place), player.getName(), String.valueOf(winners.get(uuid)),
+                getRewardMessageForPlace(place), pointMessage);
     }
 
-    public int getPlaceOfPlayer(UUID u) {
-        int place = 0;
-        for (UUID uuid : players.keySet()) {
+    public int getPlaceOfPlayer(UUID uuid) {
+        int place = 1;
+        for (UUID id : winners.keySet()) {
+            if (id.equals(uuid)) break;
             place++;
-            if (uuid.equals(u))
-                break;
-
         }
         return place;
     }
 
     public String getRewardMessageForPlace(int place) {
-        String message = config.getString("rewards.top." + place + ".message");
-        if (message == null)
-            message = "";
-        return message;
+        return config.getString("rewards.top." + place + ".message", "");
     }
 
-    public void selectionRandomWord() {
-        Random rand = new Random();
-        List<String> words = reactionManager.getWords();
-        word = words.get(rand.nextInt(words.size()));
+    private String selectRandomWord() {
+        List<String> wordList = manager.getWords();
+        return wordList.get(new Random().nextInt(wordList.size()));
     }
 
     public void start() {
-        stopped = false;
-        players = new LinkedHashMap<>();
-        String startMessagePath = "messages.chat.start_messages.";
+        this.stopped = false;
+        winners.clear();
 
-        List<String> startMessages = config.getStringList(startMessagePath + "messages");
-        List<String> hoverMessage = config.getStringList(startMessagePath + "hover");
+        List<String> startMessages = config.getStringList("messages.chat.start_messages.messages");
+        List<String> hoverMessages = config.getStringList("messages.chat.start_messages.hover");
         String startSound = config.getString("sounds.start");
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            TextComponent message = new TextComponent(TextComponent.fromLegacyText(multipleLineStringFromList(startMessages)));
-            message.setHoverEvent(
-                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, TextComponent.fromLegacyText(multipleLineStringFromList(hoverMessage).replace("{0}", word))));
-            p.spigot().sendMessage(message);
-            p.playSound(p.getLocation(), Sound.valueOf(startSound), .4f, 1.7f);
+
+        String messageText = manager.formatMultiline(startMessages);
+        String hoverTextFormatted = manager.formatMultiline(hoverMessages).replace("{0}", word);
+
+        Component hoverComponent = LegacyComponentSerializer.legacySection().deserialize(hoverTextFormatted);
+        Component messageComponent = LegacyComponentSerializer.legacySection()
+                .deserialize(messageText)
+                .hoverEvent(HoverEvent.showText(hoverComponent));
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.sendMessage(messageComponent);
+            player.playSound(player.getLocation(), Sound.valueOf(startSound), 0.4f, 1.7f);
         }
-
-    }
-
-    public String multipleLineStringFromList(List<String> list) {
-        return list.stream()
-                .map(String::valueOf)
-                .collect(Collectors.joining("\n", "", ""));
     }
 
     public void stop() {
-        if(stopped)
-            return;
+        if (stopped) return;
         stopped = true;
-        String message;
-        boolean sendTotalMessage = config.getBoolean("messages.chat.top.send_total_message");
-        int numberOfWinner = reactionManager.getRewardTopSize();
-        if (players.size() == 0)
-            message = config.getString("messages.chat.no_player");
-        else {
 
+        String finalMessage;
+        boolean sendTotal = config.getBoolean("messages.chat.top.send_total_message");
+        int topSize = manager.getRewardTopSize();
+
+        if (winners.isEmpty()) {
+            finalMessage = config.getString("messages.chat.no_player");
+
+        } else {
+            // Récompenses
             int position = 0;
-            for (UUID uuid : players.keySet()) {
-                if (position >= numberOfWinner)
-                    break;
+            for (UUID uuid : winners.keySet()) {
+                if (position >= topSize) break;
                 position++;
 
+                OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
                 List<String> commands = config.getStringList("rewards.top." + position + ".commands");
-                for (String command : commands)
-                    reactionManager.sendConsoleCommand(command, Bukkit.getOfflinePlayer(uuid));
 
-                int earnedPoints = numberOfWinner - position + 1;
-                chatReactions.getCacheManager().updatePlayerCount(uuid, earnedPoints);
-            }
-
-            if (!sendTotalMessage) {
-                if (players.size() < numberOfWinner)
-                    message = config.getString("messages.chat.top.no_all_player");
-                else
-                    message = config.getString("messages.chat.top.all_rewards");
-            } else {
-                List<String> messages = config.getStringList("messages.chat.top.message");
-                StringBuilder topMessage = new StringBuilder();
-                int number = 0;
-                for (UUID uuid : players.keySet()) {
-                    number++;
-                    topMessage.append(getTopLineOfPlayer(uuid));
-                    if (number < players.size())
-                        topMessage.append("\n");
+                for (String command : commands) {
+                    manager.sendConsoleCommand(command, player);
                 }
 
-                message = multipleLineStringFromList(messages).replace("{0}", word).replace("{1}", topMessage);
+                int earnedPoints = topSize - position + 1;
+                plugin.getCacheManager().updatePlayerScore(uuid, earnedPoints);
+            }
 
+            StringBuilder topLines = new StringBuilder();
+            int i = 0;
+            for (UUID uuid : winners.keySet()) {
+                if (i++ > 0) topLines.append("\n");
+                topLines.append(getTopLineOfPlayer(uuid));
+            }
+
+            if (sendTotal) {
+                List<String> summary = config.getStringList("messages.chat.top.message");
+                finalMessage = manager.formatMultiline(summary)
+                        .replace("{0}", word)
+                        .replace("{1}", topLines.toString());
+            } else {
+                String statusMessage = winners.size() < onlinePlayersAtStart
+                        ? config.getString("messages.chat.top.no_all_player")
+                        : config.getString("messages.chat.top.all_rewards");
+
+                finalMessage = topLines + "\n" + statusMessage;
             }
         }
 
-        if (message != null)
-            Bukkit.getServer().broadcastMessage(message);
-    }
-
-    public boolean alreadyPlayer(Player p) {
-        return players.get(p.getUniqueId()) != null;
+        if (finalMessage != null && !finalMessage.isBlank()) {
+            Component component = LegacyComponentSerializer.legacySection().deserialize(finalMessage);
+            Bukkit.getServer().sendMessage(component);
+        }
     }
 }
