@@ -3,6 +3,7 @@ package fr.nivcoo.chatreactions.utils;
 import fr.nivcoo.utilsz.database.ColumnDefinition;
 import fr.nivcoo.utilsz.database.DatabaseManager;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -27,7 +28,8 @@ public class Database {
     }
 
     public void updatePlayerScore(UUID uuid, int count) {
-        try (PreparedStatement ps = manager.prepareStatement("REPLACE INTO ranking(UUID, count) VALUES (?, ?)")) {
+        try (Connection con = manager.getConnection();
+             PreparedStatement ps = con.prepareStatement("REPLACE INTO ranking(UUID, count) VALUES (?, ?)")) {
             ps.setString(1, uuid.toString());
             ps.setInt(2, count);
             ps.executeUpdate();
@@ -37,7 +39,8 @@ public class Database {
     }
 
     public int getPlayerScore(UUID uuid) {
-        try (PreparedStatement ps = manager.prepareStatement("SELECT count FROM ranking WHERE UUID=?")) {
+        try (Connection con = manager.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT count FROM ranking WHERE UUID=?")) {
             ps.setString(1, uuid.toString());
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -52,7 +55,8 @@ public class Database {
 
     public Map<UUID, Integer> getAllPlayersScore() {
         Map<UUID, Integer> all = new HashMap<>();
-        try (PreparedStatement ps = manager.prepareStatement("SELECT UUID, count FROM ranking");
+        try (Connection con = manager.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT UUID, count FROM ranking");
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 UUID uuid = UUID.fromString(rs.getString("UUID"));
@@ -66,8 +70,9 @@ public class Database {
     }
 
     public void clearDB() {
-        try {
-            manager.executeUpdate("DELETE FROM ranking;");
+        try (Connection con = manager.getConnection();
+             PreparedStatement ps = con.prepareStatement("DELETE FROM ranking;")) {
+            ps.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
