@@ -31,6 +31,11 @@ public class PlaceHolderAPI extends PlaceholderExpansion {
     }
 
     @Override
+    public boolean persist() {
+        return true;
+    }
+
+    @Override
     public String onRequest(OfflinePlayer player, String identifier) {
         if (player == null) return "";
 
