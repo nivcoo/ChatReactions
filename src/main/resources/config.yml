@@ -18,7 +18,64 @@ redis:
   username: "" # optionnal, leave empty if not used
   password: "" # optionnal, leave empty if not used
 
-words_file_name: "words/dictionary.txt"
+reaction_types:
+  enabled: true
+  types:
+    word: 50
+    reversed: 20
+    math: 20
+    random: 10
+  word:
+    file_name: "words/dictionary.txt"
+  random_string:
+    length_min: 6
+    length_max: 8
+    characters: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+  math_list:
+    - "5 x 5 = 25"
+    - "7 + 3 = 10"
+    - "8 - 4 = 4"
+    - "6 x 3 = 18"
+    - "12 / 4 = 3"
+    - "9 + 6 = 15"
+    - "15 - 7 = 8"
+    - "10 x 2 = 20"
+    - "14 / 7 = 2"
+    - "18 - 9 = 9"
+    - "4 x 6 = 24"
+    - "25 / 5 = 5"
+    - "11 + 4 = 15"
+    - "13 - 6 = 7"
+    - "3 x 8 = 24"
+    - "9 x 2 = 18"
+    - "20 / 4 = 5"
+    - "17 - 5 = 12"
+    - "3 x 7 = 21"
+    - "16 / 2 = 8"
+    - "19 - 8 = 11"
+    - "12 x 2 = 24"
+    - "30 / 5 = 6"
+    - "10 + 10 = 20"
+    - "6 x 4 = 24"
+    - "14 - 4 = 10"
+    - "5 x 8 = 40"
+    - "9 / 3 = 3"
+    - "18 + 7 = 25"
+    - "13 + 2 = 15"
+    - "7 x 3 = 21"
+    - "11 / 1 = 11"
+    - "21 / 7 = 3"
+    - "20 + 4 = 24"
+    - "8 x 4 = 32"
+    - "15 / 3 = 5"
+    - "6 + 9 = 15"
+    - "10 / 2 = 5"
+    - "13 x 2 = 26"
+    - "17 + 3 = 20"
+    - "8 / 2 = 4"
+    - "7 x 6 = 42"
+    - "5 + 5 = 10"
+    - "3 x 9 = 27"
 
 interval:
   # in seconds
@@ -71,8 +128,7 @@ messages:
         - '&7&l---»                                               '
         - '&7[&6&l!&7] &b&lRÉACTION CHAT&7 [&6&l!&7]                                  '
         - '                                                       '
-        - '&f&l|&a&l Passe ta souris dans le chat et recopies         '
-        - '&a&lle mot affiché.                                             '
+        - '{type_lines}'
         - '                                                       '
         - '&f&l|&e Vous devez être le plus rapide pour remporter               '
         - '&eles récompenses &e!                                            '
@@ -80,6 +136,20 @@ messages:
         - '&f&l|&bNombre de Gagnants : 3                                             '
         - '&7&l---»                                                   '
         - '                                                       '
+
+    type_messages:
+      word:
+        - '&f&l|&a&l Passe ta souris dans le chat et recopies'
+        - '&a&lle mot affiché.'
+      reversed:
+        - '&f&l|&e&l Le mot est inversé, remets-le'
+        - '&e&ldans le bon sens.'
+      math:
+        - '&f&l|&b&l Résous l''équation affichée'
+        - '&b&let tape le résultat.'
+      random:
+        - '&f&l|&d&l Tape exactement la suite'
+        - '&d&lde caractères affichée.'
 
     no_player: '&7[&c&lRéaction&7] &cPersonne n''a trouvé le mot à temps.'
 

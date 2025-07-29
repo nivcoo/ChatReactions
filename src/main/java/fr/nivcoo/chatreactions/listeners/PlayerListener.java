@@ -19,7 +19,7 @@ public class PlayerListener implements Listener {
         Player player = e.getPlayer();
         String message = PlainTextComponentSerializer.plainText().serialize(e.message());
 
-        if (!message.equalsIgnoreCase(currentReaction.getWord()))
+        if (!currentReaction.isCorrect(message))
             return;
 
         if (currentReaction.addPlayerToTop(player)) {

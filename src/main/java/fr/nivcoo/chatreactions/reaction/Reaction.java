@@ -1,6 +1,7 @@
 package fr.nivcoo.chatreactions.reaction;
 
 import fr.nivcoo.chatreactions.ChatReactions;
+import fr.nivcoo.chatreactions.reaction.types.ReactionTypeEntry;
 import fr.nivcoo.utilsz.config.Config;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.HoverEvent;
@@ -10,9 +11,9 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Random;
 import java.util.UUID;
 
 public class Reaction {
@@ -25,6 +26,8 @@ public class Reaction {
     private final long startMillis;
     private boolean stopped;
 
+    private final ReactionTypeEntry type;
+
     private final LinkedHashMap<UUID, Double> winners;
 
     private final int onlinePlayersAtStart;
@@ -33,15 +36,12 @@ public class Reaction {
         this.plugin = ChatReactions.get();
         this.manager = plugin.getReactionManager();
         this.config = plugin.getConfiguration();
-        this.word = selectRandomWord();
+        this.type = manager.selectRandomType();
+        this.word = type.generateWord();
         this.startMillis = System.currentTimeMillis();
         this.stopped = false;
         this.winners = new LinkedHashMap<>();
         this.onlinePlayersAtStart = Bukkit.getOnlinePlayers().size();
-    }
-
-    public String getWord() {
-        return word;
     }
 
     public boolean alreadyPlayer(Player player) {
@@ -105,21 +105,28 @@ public class Reaction {
         return config.getString("rewards.top." + place + ".message", "");
     }
 
-    private String selectRandomWord() {
-        List<String> wordList = manager.getWords();
-        return wordList.get(new Random().nextInt(wordList.size()));
-    }
-
     public void start() {
         this.stopped = false;
         winners.clear();
 
-        List<String> startMessages = config.getStringList("messages.chat.start_messages.messages");
+        List<String> typeLines = type.getDescriptionMessages();
+
+        List<String> finalStartMessages = new ArrayList<>();
+        for (String line : config.getStringList("messages.chat.start_messages.messages")) {
+            if (line.contains("{type_lines}")) {
+                finalStartMessages.addAll(typeLines);
+            } else {
+                finalStartMessages.add(line);
+            }
+        }
+
         List<String> hoverMessages = config.getStringList("messages.chat.start_messages.hover");
         String startSound = config.getString("sounds.start");
 
-        String messageText = manager.formatMultiline(startMessages);
-        String hoverTextFormatted = manager.formatMultiline(hoverMessages).replace("{0}", word);
+        String messageText = String.join("\n", finalStartMessages);
+
+        System.out.println(messageText);
+        String hoverTextFormatted = String.join("\n", hoverMessages).replace("{0}", word);
 
         Component hoverComponent = LegacyComponentSerializer.legacySection().deserialize(hoverTextFormatted);
         Component messageComponent = LegacyComponentSerializer.legacySection()
@@ -186,5 +193,9 @@ public class Reaction {
             Component component = LegacyComponentSerializer.legacySection().deserialize(finalMessage);
             Bukkit.getServer().sendMessage(component);
         }
+    }
+
+    public boolean isCorrect(String input) {
+        return type.isCorrect(input);
     }
 }

@@ -1,6 +1,7 @@
 package fr.nivcoo.chatreactions.reaction;
 
 import fr.nivcoo.chatreactions.ChatReactions;
+import fr.nivcoo.chatreactions.reaction.types.*;
 import fr.nivcoo.utilsz.config.Config;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -21,19 +22,22 @@ public class ReactionManager {
     private Thread reactionThread;
     private Timer reactionTimeout;
 
+    private final List<ReactionTypeEntry> availableTypes = new ArrayList<>();
+
     public ReactionManager() {
         this.plugin = ChatReactions.get();
         this.config = plugin.getConfiguration();
         this.topConfig = config.getKeys("rewards.top");
 
         loadWords();
+        loadReactionTypes();
         startReactionTask(false);
     }
 
     public void loadWords() {
         words = new ArrayList<>();
         try {
-            File file = new File(plugin.getDataFolder(), config.getString("words_file_name"));
+            File file = new File(plugin.getDataFolder(), config.getString("reaction_types.word.file_name"));
             Scanner scanner = new Scanner(file);
             while (scanner.hasNext()) {
                 words.add(scanner.next());
@@ -129,5 +133,44 @@ public class ReactionManager {
                 stopCurrentReaction();
             }
         }, delaySeconds * 1000L);
+    }
+
+    private void loadReactionTypes() {
+        availableTypes.clear();
+
+        addIfEnabled(new WordReactionType());
+        addIfEnabled(new ReversedWordReactionType());
+        addIfEnabled(new MathReactionType());
+        addIfEnabled(new RandomStringReactionType());
+
+        plugin.getLogger().info("[ChatReactions] Loaded " + availableTypes.size() + " reaction types.");
+    }
+
+    private void addIfEnabled(ReactionTypeEntry type) {
+        if (type.getWeight() > 0) {
+            availableTypes.add(type);
+        }
+    }
+
+    public ReactionTypeEntry selectRandomType() {
+        if (availableTypes.isEmpty()) {
+            return new WordReactionType();
+        }
+
+        int totalWeight = availableTypes.stream().mapToInt(ReactionTypeEntry::getWeight).sum();
+        if (totalWeight != 100) {
+            plugin.getLogger().warning("[ChatReactions] The total weight of reaction types is not 100%: " + totalWeight + "% Normalizing to 100%.");
+        }
+
+        int random = new Random().nextInt(100) + 1;
+        int cumulative = 0;
+
+        for (ReactionTypeEntry type : availableTypes) {
+            cumulative += type.getWeight();
+            if (random <= cumulative) {
+                return type;
+            }
+        }
+        return availableTypes.get(0);
     }
 }
