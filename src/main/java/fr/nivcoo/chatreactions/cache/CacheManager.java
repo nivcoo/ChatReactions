@@ -27,6 +27,7 @@ public class CacheManager implements Listener {
         this.database = plugin.getDatabase();
 
         loadFullRanking();
+        loadAllNamesFromDatabase();
     }
 
     public void cacheName(UUID uuid, String name) {
@@ -40,13 +41,23 @@ public class CacheManager implements Listener {
         if (c != null) return c;
 
         String db = ChatReactions.get().getDatabase().getPlayerName(uuid);
-        if (db != null && !db.isBlank()) { nameCache.put(uuid, db); return db; }
+        if (db != null && !db.isBlank()) {
+            nameCache.put(uuid, db);
+            return db;
+        }
 
         var online = Bukkit.getPlayer(uuid);
-        if (online != null) { String n = online.getName(); cacheName(uuid, n); return n; }
+        if (online != null) {
+            String n = online.getName();
+            cacheName(uuid, n);
+            return n;
+        }
 
         String off = Bukkit.getOfflinePlayer(uuid).getName();
-        if (off != null && !off.isBlank()) { cacheName(uuid, off); return off; }
+        if (off != null && !off.isBlank()) {
+            cacheName(uuid, off);
+            return off;
+        }
 
         String fb = uuid.toString().substring(0, 8);
         nameCache.put(uuid, fb);
@@ -95,5 +106,15 @@ public class CacheManager implements Listener {
 
     public Map<UUID, Integer> getSortedRanking() {
         return rankingCache;
+    }
+
+    public void loadAllNamesFromDatabase() {
+        Map<UUID, String> all = ChatReactions.get().getDatabase().getAllPlayerNames();
+        for (Map.Entry<UUID, String> entry : all.entrySet()) {
+            if (entry.getValue() != null && !entry.getValue().isBlank()) {
+                nameCache.put(entry.getKey(), entry.getValue());
+            }
+        }
+        ChatReactions.get().getLogger().info("[ChatReactions] Loaded " + all.size() + " player names into cache.");
     }
 }

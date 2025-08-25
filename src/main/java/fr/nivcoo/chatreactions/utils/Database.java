@@ -102,4 +102,20 @@ public class Database {
         } catch (SQLException e) { e.printStackTrace(); }
         return null;
     }
+
+    public Map<UUID, String> getAllPlayerNames() {
+        Map<UUID, String> all = new HashMap<>();
+        try (Connection con = manager.getConnection();
+             PreparedStatement ps = con.prepareStatement("SELECT UUID, name FROM player_names");
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                UUID uuid = UUID.fromString(rs.getString("UUID"));
+                String name = rs.getString("name");
+                all.put(uuid, name);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return all;
+    }
 }
