@@ -1,5 +1,6 @@
 package fr.nivcoo.chatreactions;
 
+import fr.nivcoo.chatreactions.actions.PlayerNameUpdateAction;
 import fr.nivcoo.chatreactions.cache.CacheManager;
 import fr.nivcoo.chatreactions.command.commands.StartCMD;
 import fr.nivcoo.chatreactions.command.commands.StopCMD;
@@ -59,6 +60,7 @@ public class ChatReactions extends JavaPlugin {
             redisChannel = redisManager.createRegistry("chatreactions-update");
 
             redisChannel.register(ReactionWinAction.class);
+            redisChannel.register(PlayerNameUpdateAction.class);
 
             getLogger().info("Redis enabled and connected to " + config.getString("redis.host") + ":" + config.getInt("redis.port"));
         } else {

@@ -1,6 +1,7 @@
 package fr.nivcoo.chatreactions.reaction;
 
 import fr.nivcoo.chatreactions.ChatReactions;
+import fr.nivcoo.chatreactions.actions.PlayerNameUpdateAction;
 import fr.nivcoo.chatreactions.reaction.types.ReactionTypeEntry;
 import fr.nivcoo.utilsz.config.Config;
 import net.kyori.adventure.text.Component;
@@ -58,6 +59,12 @@ public class Reaction {
             winners.put(uuid, seconds);
 
 
+            plugin.getCacheManager().cacheName(uuid, player.getName());
+
+            if (plugin.isRedisEnabled()) {
+                Bukkit.getScheduler().runTask(plugin, () -> plugin.getRedisChannel().publish(new PlayerNameUpdateAction(uuid, player.getName())));
+            }
+
             Component component = LegacyComponentSerializer.legacySection().deserialize(getTopLineOfPlayer(uuid));
             Bukkit.getServer().sendMessage(component);
 
@@ -80,16 +87,11 @@ public class Reaction {
         int rewardTop = manager.getRewardTopSize();
         int earnedPoints = rewardTop - place + 1;
 
-        String type = earnedPoints > 1
-                ? config.getString("messages.chat.top.template_points.points")
-                : config.getString("messages.chat.top.template_points.point");
+        String type = earnedPoints > 1 ? config.getString("messages.chat.top.template_points.points") : config.getString("messages.chat.top.template_points.point");
 
-        String pointMessage = config.getString("messages.chat.top.template_points.display",
-                String.valueOf(earnedPoints), type);
+        String pointMessage = config.getString("messages.chat.top.template_points.display", String.valueOf(earnedPoints), type);
 
-        return config.getString("messages.chat.top.template",
-                String.valueOf(place), player.getName(), String.valueOf(winners.get(uuid)),
-                getRewardMessageForPlace(place), pointMessage);
+        return config.getString("messages.chat.top.template", String.valueOf(place), player.getName(), String.valueOf(winners.get(uuid)), getRewardMessageForPlace(place), pointMessage);
     }
 
     public int getPlaceOfPlayer(UUID uuid) {
@@ -129,9 +131,7 @@ public class Reaction {
         String hoverTextFormatted = String.join("\n", hoverMessages).replace("{0}", word);
 
         Component hoverComponent = LegacyComponentSerializer.legacySection().deserialize(hoverTextFormatted);
-        Component messageComponent = LegacyComponentSerializer.legacySection()
-                .deserialize(messageText)
-                .hoverEvent(HoverEvent.showText(hoverComponent));
+        Component messageComponent = LegacyComponentSerializer.legacySection().deserialize(messageText).hoverEvent(HoverEvent.showText(hoverComponent));
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             player.sendMessage(messageComponent);
@@ -177,14 +177,10 @@ public class Reaction {
 
             if (sendTotal) {
                 List<String> summary = config.getStringList("messages.chat.top.message");
-                finalMessage = manager.formatMultiline(summary)
-                        .replace("{0}", word)
-                        .replace("{1}", topLines.toString());
+                finalMessage = manager.formatMultiline(summary).replace("{0}", word).replace("{1}", topLines.toString());
             } else {
                 boolean allGiven = winners.size() >= targetWinners;
-                finalMessage = allGiven
-                        ? config.getString("messages.chat.top.all_rewards")
-                        : config.getString("messages.chat.top.no_all_player");
+                finalMessage = allGiven ? config.getString("messages.chat.top.all_rewards") : config.getString("messages.chat.top.no_all_player");
             }
         }
 
