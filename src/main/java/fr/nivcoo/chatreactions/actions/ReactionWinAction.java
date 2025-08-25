@@ -15,7 +15,6 @@ public record ReactionWinAction(UUID uuid, int count) implements RedisSerializab
         Bukkit.getScheduler().runTask(ChatReactions.get(), () -> {
             ChatReactions plugin = ChatReactions.get();
             plugin.getCacheManager().redisUpdatePlayerScore(uuid, count);
-            plugin.getLogger().info("Update with Redis : " + uuid + " -> " + count);
         });
     }
 }
