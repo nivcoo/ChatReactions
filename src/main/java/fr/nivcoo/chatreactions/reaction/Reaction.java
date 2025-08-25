@@ -146,12 +146,12 @@ public class Reaction {
         String finalMessage;
         boolean sendTotal = config.getBoolean("messages.chat.top.send_total_message");
         int topSize = manager.getRewardTopSize();
+        int targetWinners = Math.min(topSize, onlinePlayersAtStart);
 
         if (winners.isEmpty()) {
             finalMessage = config.getString("messages.chat.no_player");
 
         } else {
-            // Récompenses
             int position = 0;
             for (UUID uuid : winners.keySet()) {
                 if (position >= topSize) break;
@@ -181,11 +181,10 @@ public class Reaction {
                         .replace("{0}", word)
                         .replace("{1}", topLines.toString());
             } else {
-                String statusMessage = winners.size() < onlinePlayersAtStart
-                        ? config.getString("messages.chat.top.no_all_player")
-                        : config.getString("messages.chat.top.all_rewards");
-
-                finalMessage = topLines + "\n" + statusMessage;
+                boolean allGiven = winners.size() >= targetWinners;
+                finalMessage = allGiven
+                        ? config.getString("messages.chat.top.all_rewards")
+                        : config.getString("messages.chat.top.no_all_player");
             }
         }
 

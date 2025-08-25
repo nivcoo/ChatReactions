@@ -102,7 +102,13 @@ public class ReactionManager {
         if (currentReaction != null)
             currentReaction.stop();
         currentReaction = null;
+
+        if (reactionTimeout != null) {
+            reactionTimeout.cancel();
+            reactionTimeout = null;
+        }
     }
+
 
     public void stopReactionTask() {
         if (reactionThread != null)
