@@ -12,7 +12,7 @@ public record PlayerNameUpdateAction(UUID uuid, String name) implements RedisSer
     @Override public void execute() {
         if (name == null || name.isBlank()) return;
         Bukkit.getScheduler().runTask(ChatReactions.get(), () ->
-                ChatReactions.get().getCacheManager().cacheName(uuid, name)
+                ChatReactions.get().getCacheManager().cacheNameRemote(uuid, name)
         );
     }
 }

@@ -61,10 +61,6 @@ public class Reaction {
 
             plugin.getCacheManager().cacheName(uuid, player.getName());
 
-            if (plugin.isRedisEnabled()) {
-                Bukkit.getScheduler().runTask(plugin, () -> plugin.getRedisChannel().publish(new PlayerNameUpdateAction(uuid, player.getName())));
-            }
-
             Component component = LegacyComponentSerializer.legacySection().deserialize(getTopLineOfPlayer(uuid));
             Bukkit.getServer().sendMessage(component);
 
@@ -83,7 +79,7 @@ public class Reaction {
 
     public String getTopLineOfPlayer(UUID uuid) {
         int place = getPlaceOfPlayer(uuid);
-        OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
+        String playerName = plugin.getCacheManager().resolvePlayerName(uuid);
         int rewardTop = manager.getRewardTopSize();
         int earnedPoints = rewardTop - place + 1;
 
@@ -91,7 +87,12 @@ public class Reaction {
 
         String pointMessage = config.getString("messages.chat.top.template_points.display", String.valueOf(earnedPoints), type);
 
-        return config.getString("messages.chat.top.template", String.valueOf(place), player.getName(), String.valueOf(winners.get(uuid)), getRewardMessageForPlace(place), pointMessage);
+        return config.getString("messages.chat.top.template",
+                String.valueOf(place),
+                playerName,
+                String.valueOf(winners.get(uuid)),
+                getRewardMessageForPlace(place),
+                pointMessage);
     }
 
     public int getPlaceOfPlayer(UUID uuid) {

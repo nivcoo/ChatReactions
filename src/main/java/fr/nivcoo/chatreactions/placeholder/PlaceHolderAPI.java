@@ -72,8 +72,7 @@ public class PlaceHolderAPI extends PlaceholderExpansion {
         int index = 1;
         for (Map.Entry<UUID, Integer> entry : scores.entrySet()) {
             if (index == rank) {
-                return Optional.ofNullable(plugin.getServer().getOfflinePlayer(entry.getKey()).getName())
-                        .orElse("Unknown");
+                return plugin.getCacheManager().resolvePlayerName(entry.getKey());
             }
             index++;
         }

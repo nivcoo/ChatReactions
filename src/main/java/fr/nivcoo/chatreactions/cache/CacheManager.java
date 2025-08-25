@@ -1,6 +1,7 @@
 package fr.nivcoo.chatreactions.cache;
 
 import fr.nivcoo.chatreactions.ChatReactions;
+import fr.nivcoo.chatreactions.actions.PlayerNameUpdateAction;
 import fr.nivcoo.chatreactions.actions.ReactionWinAction;
 import fr.nivcoo.chatreactions.utils.Database;
 
@@ -30,11 +31,35 @@ public class CacheManager implements Listener {
         loadAllNamesFromDatabase();
     }
 
+    public void cacheNameRemote(UUID uuid, String name) {
+        if (name == null || name.isBlank()) return;
+
+        String cached = nameCache.get(uuid);
+        if (cached != null && cached.equals(name)) {
+            return;
+        }
+        nameCache.put(uuid, name);
+    }
+
+
     public void cacheName(UUID uuid, String name) {
         if (name == null || name.isBlank()) return;
+
+        String cached = nameCache.get(uuid);
+        if (cached != null && cached.equals(name)) {
+            return;
+        }
+
         nameCache.put(uuid, name);
         ChatReactions.get().getDatabase().savePlayerName(uuid, name);
+
+        if (plugin.isRedisEnabled()) {
+            Bukkit.getScheduler().runTask(plugin, () ->
+                    plugin.getRedisChannel().publish(new PlayerNameUpdateAction(uuid, name))
+            );
+        }
     }
+
 
     public String resolvePlayerName(UUID uuid) {
         String c = nameCache.get(uuid);
