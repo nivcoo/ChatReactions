@@ -1,18 +1,16 @@
 package fr.nivcoo.chatreactions.cache;
 
 import fr.nivcoo.chatreactions.ChatReactions;
-import fr.nivcoo.chatreactions.actions.PlayerNameUpdateAction;
 import fr.nivcoo.chatreactions.actions.ReactionWinAction;
 import fr.nivcoo.chatreactions.utils.Database;
 
-import java.util.LinkedHashMap;
+import java.util.*;
 
-import org.bukkit.Bukkit;
+import fr.nivcoo.edenplayers.EdenPlayers;
+import fr.nivcoo.edenplayers.api.AEdenPlayers;
+import fr.nivcoo.edenplayers.api.model.PlayerProfile;
 import org.bukkit.event.Listener;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class CacheManager implements Listener {
@@ -21,72 +19,28 @@ public class CacheManager implements Listener {
     private final Database database;
 
     private Map<UUID, Integer> rankingCache = new LinkedHashMap<>();
-    private final Map<UUID, String> nameCache = new HashMap<>();
 
     public CacheManager() {
         this.plugin = ChatReactions.get();
         this.database = plugin.getDatabase();
 
         loadFullRanking();
-        loadAllNamesFromDatabase();
-    }
-
-    public void cacheNameRemote(UUID uuid, String name) {
-        if (name == null || name.isBlank()) return;
-
-        String cached = nameCache.get(uuid);
-        if (cached != null && cached.equals(name)) {
-            return;
-        }
-        nameCache.put(uuid, name);
-    }
-
-
-    public void cacheName(UUID uuid, String name) {
-        if (name == null || name.isBlank()) return;
-
-        String cached = nameCache.get(uuid);
-        if (cached != null && cached.equals(name)) {
-            return;
-        }
-
-        nameCache.put(uuid, name);
-        ChatReactions.get().getDatabase().savePlayerName(uuid, name);
-
-        if (plugin.isRedisEnabled()) {
-            Bukkit.getScheduler().runTask(plugin, () ->
-                    plugin.getRedisChannel().publish(new PlayerNameUpdateAction(uuid, name))
-            );
-        }
     }
 
 
     public String resolvePlayerName(UUID uuid) {
-        String c = nameCache.get(uuid);
-        if (c != null) return c;
-
-        String db = ChatReactions.get().getDatabase().getPlayerName(uuid);
-        if (db != null && !db.isBlank()) {
-            nameCache.put(uuid, db);
-            return db;
+        AEdenPlayers api = EdenPlayers.get();
+        if (api != null) {
+            Optional<PlayerProfile> optProfile = api.getProfileCached(uuid);
+            if (optProfile.isPresent()) {
+                String name = optProfile.get().getUsername();
+                if (name != null && !name.isBlank()) {
+                    return name;
+                }
+            }
         }
 
-        var online = Bukkit.getPlayer(uuid);
-        if (online != null) {
-            String n = online.getName();
-            cacheName(uuid, n);
-            return n;
-        }
-
-        String off = Bukkit.getOfflinePlayer(uuid).getName();
-        if (off != null && !off.isBlank()) {
-            cacheName(uuid, off);
-            return off;
-        }
-
-        String fb = uuid.toString().substring(0, 8);
-        nameCache.put(uuid, fb);
-        return fb;
+        return uuid.toString();
     }
 
     public void loadFullRanking() {
@@ -131,15 +85,5 @@ public class CacheManager implements Listener {
 
     public Map<UUID, Integer> getSortedRanking() {
         return rankingCache;
-    }
-
-    public void loadAllNamesFromDatabase() {
-        Map<UUID, String> all = ChatReactions.get().getDatabase().getAllPlayerNames();
-        for (Map.Entry<UUID, String> entry : all.entrySet()) {
-            if (entry.getValue() != null && !entry.getValue().isBlank()) {
-                nameCache.put(entry.getKey(), entry.getValue());
-            }
-        }
-        ChatReactions.get().getLogger().info("[ChatReactions] Loaded " + all.size() + " player names into cache.");
     }
 }

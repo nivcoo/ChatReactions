@@ -22,10 +22,6 @@ public class Database {
                     new ColumnDefinition("UUID", "TEXT", "PRIMARY KEY"),
                     new ColumnDefinition("count", "INTEGER", "DEFAULT 0")
             ));
-            manager.createTable("player_names", Arrays.asList(
-                    new ColumnDefinition("UUID", "TEXT", "PRIMARY KEY"),
-                    new ColumnDefinition("name", "TEXT")
-            ));
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -80,42 +76,5 @@ public class Database {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-    }
-
-    public void savePlayerName(UUID uuid, String name) {
-        if (name == null || name.isBlank()) return;
-        try (Connection con = manager.getConnection();
-             PreparedStatement ps = con.prepareStatement("REPLACE INTO player_names(UUID, name) VALUES (?, ?)")) {
-            ps.setString(1, uuid.toString());
-            ps.setString(2, name);
-            ps.executeUpdate();
-        } catch (SQLException e) { e.printStackTrace(); }
-    }
-
-    public String getPlayerName(UUID uuid) {
-        try (Connection con = manager.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT name FROM player_names WHERE UUID=?")) {
-            ps.setString(1, uuid.toString());
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) return rs.getString("name");
-            }
-        } catch (SQLException e) { e.printStackTrace(); }
-        return null;
-    }
-
-    public Map<UUID, String> getAllPlayerNames() {
-        Map<UUID, String> all = new HashMap<>();
-        try (Connection con = manager.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT UUID, name FROM player_names");
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                UUID uuid = UUID.fromString(rs.getString("UUID"));
-                String name = rs.getString("name");
-                all.put(uuid, name);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return all;
     }
 }

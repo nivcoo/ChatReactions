@@ -1,7 +1,6 @@
 package fr.nivcoo.chatreactions.reaction;
 
 import fr.nivcoo.chatreactions.ChatReactions;
-import fr.nivcoo.chatreactions.actions.PlayerNameUpdateAction;
 import fr.nivcoo.chatreactions.reaction.types.ReactionTypeEntry;
 import fr.nivcoo.utilsz.config.Config;
 import net.kyori.adventure.text.Component;
@@ -57,9 +56,6 @@ public class Reaction {
             UUID uuid = player.getUniqueId();
             double seconds = Math.round(((System.currentTimeMillis() - startMillis) / 1000.0) * 100.0) / 100.0;
             winners.put(uuid, seconds);
-
-
-            plugin.getCacheManager().cacheName(uuid, player.getName());
 
             Component component = LegacyComponentSerializer.legacySection().deserialize(getTopLineOfPlayer(uuid));
             Bukkit.getServer().sendMessage(component);
