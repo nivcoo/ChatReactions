@@ -62,7 +62,7 @@ public class CacheManager implements Listener {
         rankingCache.put(uuid, newCount);
 
         if (plugin.isRedisEnabled()) {
-            plugin.getRedisChannel().publish(new ReactionWinAction(uuid, newCount));
+            plugin.getBus().publish(new ReactionWinAction(uuid, newCount));
         }
 
         sortRankingCache();

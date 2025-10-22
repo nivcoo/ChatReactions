@@ -21,9 +21,9 @@ public class RandomStringReactionType implements ReactionTypeEntry {
 
     @Override
     public String generateWord() {
-        int min = ChatReactions.get().getConfiguration().getInt("random_string.length_min");
-        int max = ChatReactions.get().getConfiguration().getInt("random_string.length_max");
-        String chars = ChatReactions.get().getConfiguration().getString("random_string.characters");
+        int min = ChatReactions.get().getConfiguration().getInt("reaction_types.random_string.length_min");
+        int max = ChatReactions.get().getConfiguration().getInt("reaction_types.random_string.length_max");
+        String chars = ChatReactions.get().getConfiguration().getString("reaction_types.random_string.characters");
 
         if (chars == null || chars.isEmpty()) {
             throw new IllegalStateException("The characters configuration for random strings is empty.");
@@ -49,4 +49,6 @@ public class RandomStringReactionType implements ReactionTypeEntry {
     public List<String> getDescriptionMessages() {
         return ChatReactions.get().getConfiguration().getStringList("messages.chat.type_messages.random");
     }
+
+    public String expectedAnswer(){ return randomString; }
 }

@@ -38,4 +38,6 @@ public class WordReactionType implements ReactionTypeEntry {
     public List<String> getDescriptionMessages() {
         return ChatReactions.get().getConfiguration().getStringList("messages.chat.type_messages.word");
     }
+
+    public String expectedAnswer(){ return word; }
 }

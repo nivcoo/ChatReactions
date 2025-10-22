@@ -1,5 +1,9 @@
 # %chatreactions_get_score%
 
+server:
+  role: "agent" # ou "agent" ou "manager"
+  server_name: "skyblock_dev"
+
 database:
   type: "sqlite" # ou "mysql"
   sqlite:
@@ -85,8 +89,6 @@ interval:
 # in seconds
 time_limit: 30
 
-player_needed: 5
-
 sounds:
   start: ENTITY_EXPERIENCE_ORB_PICKUP
   win: ENTITY_EXPERIENCE_ORB_PICKUP
@@ -117,8 +119,13 @@ messages:
       - "&7&m----------------------------------------------"
     start:
       success: "&7[&c&lES&7] La Réaction a été lancé avec succès !"
+      no_manager: "&7[&c&lES&7] Le serveur doit être en mode &c&lMANAGER &7pour lancer une réaction !"
+      already_running: "&7[&c&lES&7] Une Réaction est déjà en cours !"
     stop:
       success: "&7[&c&lES&7] La Réaction a été stoppé avec succès !"
+      no_manager: "&7[&c&lES&7] Le serveur doit être en mode &c&lMANAGER &7pour stopper une réaction !"
+      no_reaction: "&7[&c&lES&7] Il n'y a pas de Réaction en cours !"
+
   chat:
     start_messages:
       hover:

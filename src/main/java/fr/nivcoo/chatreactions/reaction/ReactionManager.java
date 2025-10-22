@@ -4,7 +4,6 @@ import fr.nivcoo.chatreactions.ChatReactions;
 import fr.nivcoo.chatreactions.reaction.types.*;
 import fr.nivcoo.utilsz.config.Config;
 import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -18,7 +17,7 @@ public class ReactionManager {
     private final List<String> topConfig;
     private List<String> words;
 
-    private Reaction currentReaction;
+    private volatile Reaction currentReaction;
     private Thread reactionThread;
     private Timer reactionTimeout;
 
@@ -31,7 +30,37 @@ public class ReactionManager {
 
         loadWords();
         loadReactionTypes();
-        startReactionTask(false);
+
+    }
+
+    public void installShadow(String answer) {
+        if (plugin.isManager()) return;
+        this.currentReaction = new ShadowReaction(answer);
+    }
+
+    public void clearShadow() {
+        if (plugin.isManager()) return;
+        this.currentReaction = null;
+    }
+
+    private static final class ShadowReaction extends Reaction {
+        private final String answer;
+        ShadowReaction(String answer) {
+            super();
+            this.answer = answer;
+        }
+        @Override public void start() { /* no-op shadow */ }
+        @Override public void stop()  { /* no-op shadow */ }
+
+        @Override
+        public boolean isCorrect(String input) {
+            return input != null && input.trim().equalsIgnoreCase(answer);
+        }
+
+        @Override
+        public boolean tryAcceptLocal(java.util.UUID player, String input) {
+            return false;
+        }
     }
 
     public void loadWords() {
@@ -39,12 +68,9 @@ public class ReactionManager {
         try {
             File file = new File(plugin.getDataFolder(), config.getString("reaction_types.word.file_name"));
             Scanner scanner = new Scanner(file);
-            while (scanner.hasNext()) {
-                words.add(scanner.next());
-            }
+            while (scanner.hasNext()) words.add(scanner.next());
             scanner.close();
-        } catch (FileNotFoundException ignored) {
-        }
+        } catch (FileNotFoundException ignored) {}
     }
 
     public List<String> getWords() {
@@ -66,7 +92,7 @@ public class ReactionManager {
     public void startReactionTask(boolean forceMode) {
         stopReactionTask();
 
-        String threadName = "Reactions Start Thread";
+        String threadName = "ChatReactions-Manager-Scheduler";
         int timeLimit = config.getInt("time_limit");
 
         reactionThread = new Thread(() -> {
@@ -75,14 +101,15 @@ public class ReactionManager {
             while (!Thread.interrupted()) {
                 try {
                     if (waitBeforeStart) {
-                        int min = config.getInt("interval.min");
-                        int max = config.getInt("interval.max");
+                        int min = Math.max(1, config.getInt("interval.min"));
+                        int max = Math.max(min + 1, config.getInt("interval.max"));
                         int interval = new Random().nextInt(max - min) + min;
                         Thread.sleep(interval * 1000L);
                     }
 
+                    if (!plugin.isManager()) continue;
+
                     if (currentReaction != null) continue;
-                    if (config.getInt("player_needed") > Bukkit.getOnlinePlayers().size() && !forceMode) continue;
 
                     currentReaction = new Reaction();
                     currentReaction.start();
@@ -91,16 +118,19 @@ public class ReactionManager {
 
                 } catch (InterruptedException ignored) {
                     break;
+                } catch (Throwable t) {
+                    plugin.getLogger().warning("[ChatReactions] Scheduler error: " + t.getMessage());
                 }
             }
         }, threadName);
 
+        reactionThread.setDaemon(true);
         reactionThread.start();
     }
 
     public void stopCurrentReaction() {
-        if (currentReaction != null)
-            currentReaction.stop();
+        Reaction r = currentReaction;
+        if (r != null) r.stop();
         currentReaction = null;
 
         if (reactionTimeout != null) {
@@ -109,36 +139,45 @@ public class ReactionManager {
         }
     }
 
-
     public void stopReactionTask() {
-        if (reactionThread != null)
+        if (reactionThread != null) {
             reactionThread.interrupt();
+            reactionThread = null;
+        }
         stopCurrentReaction();
     }
 
     public void disablePlugin() {
-        if (reactionTimeout != null)
-            reactionTimeout.cancel();
+        if (reactionTimeout != null) reactionTimeout.cancel();
         stopReactionTask();
     }
 
-    public void sendConsoleCommand(String command, OfflinePlayer player) {
+    public void sendConsoleCommand(String command, String username) {
         Bukkit.getScheduler().runTask(plugin, () ->
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command.replace("%player%", player.getName())));
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command.replace("%player%", username)));
     }
 
     public String formatMultiline(List<String> list) {
         return String.join("\n", list);
     }
 
+    public String formatStartMessage(List<String> typeLines) {
+        List<String> start = config.getStringList("messages.chat.start_messages.messages");
+        List<String> out = new ArrayList<>();
+        for (String line : start) {
+            if (line.contains("{type_lines}")) out.addAll(typeLines);
+            else out.add(line);
+        }
+        return String.join("\n", out);
+    }
+
     public void scheduleReactionEnd(String threadName, int delaySeconds) {
         reactionTimeout = new Timer(threadName);
         reactionTimeout.schedule(new TimerTask() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 stopCurrentReaction();
             }
-        }, delaySeconds * 1000L);
+        }, Math.max(1, delaySeconds) * 1000L);
     }
 
     private void loadReactionTypes() {
@@ -153,29 +192,22 @@ public class ReactionManager {
     }
 
     private void addIfEnabled(ReactionTypeEntry type) {
-        if (type.getWeight() > 0) {
-            availableTypes.add(type);
-        }
+        if (type.getWeight() > 0) availableTypes.add(type);
     }
 
     public ReactionTypeEntry selectRandomType() {
-        if (availableTypes.isEmpty()) {
-            return new WordReactionType();
-        }
+        if (availableTypes.isEmpty()) return new WordReactionType();
 
         int totalWeight = availableTypes.stream().mapToInt(ReactionTypeEntry::getWeight).sum();
         if (totalWeight != 100) {
-            plugin.getLogger().warning("[ChatReactions] The total weight of reaction types is not 100%: " + totalWeight + "% Normalizing to 100%.");
+            plugin.getLogger().warning("[ChatReactions] Reaction types weight != 100%: " + totalWeight + "%. Normalizing.");
         }
 
-        int random = new Random().nextInt(100) + 1;
-        int cumulative = 0;
-
-        for (ReactionTypeEntry type : availableTypes) {
-            cumulative += type.getWeight();
-            if (random <= cumulative) {
-                return type;
-            }
+        int roll = new Random().nextInt(100) + 1;
+        int cum = 0;
+        for (ReactionTypeEntry t : availableTypes) {
+            cum += t.getWeight();
+            if (roll <= cum) return t;
         }
         return availableTypes.get(0);
     }

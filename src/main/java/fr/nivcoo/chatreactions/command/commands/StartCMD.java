@@ -1,6 +1,5 @@
 package fr.nivcoo.chatreactions.command.commands;
 
-
 import fr.nivcoo.chatreactions.ChatReactions;
 import fr.nivcoo.chatreactions.command.CCommand;
 import fr.nivcoo.utilsz.config.Config;
@@ -11,6 +10,12 @@ import java.util.Collections;
 import java.util.List;
 
 public class StartCMD implements CCommand {
+
+    private final boolean managerRole;
+
+    public StartCMD(boolean managerRole) {
+        this.managerRole = managerRole;
+    }
 
     @Override
     public List<String> getAliases() {
@@ -29,7 +34,7 @@ public class StartCMD implements CCommand {
 
     @Override
     public String getDescription() {
-        return null;
+        return "Force le démarrage manuel d'une réaction.";
     }
 
     @Override
@@ -44,18 +49,33 @@ public class StartCMD implements CCommand {
 
     @Override
     public boolean canBeExecutedByConsole() {
-        return false;
+        return true;
     }
 
+    @Override
     public void execute(ChatReactions plugin, CommandSender sender, String[] args) {
         Config config = plugin.getConfiguration();
-        plugin.getReactionManager().startReactionTask();
-        sender.sendMessage(config.getString("messages.commands.start.success"));
+
+        String msgNoManager = config.getString("messages.commands.start.no_manager");
+        String msgAlreadyRunning = config.getString("messages.commands.start.already_running");
+        String msgSuccess = config.getString("messages.commands.start.success");
+
+        if (!managerRole) {
+            sender.sendMessage(msgNoManager);
+            return;
+        }
+
+        if (plugin.getReactionManager().getCurrentReaction() != null) {
+            sender.sendMessage(msgAlreadyRunning);
+            return;
+        }
+
+        plugin.getReactionManager().startReactionTask(true);
+        sender.sendMessage(msgSuccess);
     }
 
     @Override
     public List<String> tabComplete(ChatReactions plugin, CommandSender sender, String[] args) {
         return new ArrayList<>();
     }
-
 }

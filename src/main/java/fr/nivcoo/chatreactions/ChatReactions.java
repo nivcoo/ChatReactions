@@ -1,19 +1,20 @@
 package fr.nivcoo.chatreactions;
 
+import fr.nivcoo.chatreactions.actions.*;
+import fr.nivcoo.chatreactions.actions.rpc.CheckAnswerEndpoint;
 import fr.nivcoo.chatreactions.cache.CacheManager;
 import fr.nivcoo.chatreactions.command.commands.StartCMD;
 import fr.nivcoo.chatreactions.command.commands.StopCMD;
 import fr.nivcoo.chatreactions.listeners.PlayerListener;
 import fr.nivcoo.chatreactions.placeholder.PlaceHolderAPI;
 import fr.nivcoo.chatreactions.reaction.ReactionManager;
-import fr.nivcoo.chatreactions.actions.ReactionWinAction;
 import fr.nivcoo.chatreactions.utils.Database;
 import fr.nivcoo.utilsz.commands.CommandManager;
 import fr.nivcoo.utilsz.config.Config;
 import fr.nivcoo.utilsz.database.DatabaseManager;
 import fr.nivcoo.utilsz.database.DatabaseType;
-import fr.nivcoo.utilsz.redis.RedisChannelRegistry;
 import fr.nivcoo.utilsz.redis.RedisManager;
+import fr.nivcoo.utilsz.redis.bus.RedisBus;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -22,6 +23,7 @@ import java.io.File;
 public class ChatReactions extends JavaPlugin {
 
     private static ChatReactions INSTANCE;
+
     private Config config;
     private ReactionManager reactionManager;
     private Database database;
@@ -29,13 +31,14 @@ public class ChatReactions extends JavaPlugin {
     private DatabaseManager dbManager;
 
     private RedisManager redisManager;
-    private RedisChannelRegistry redisChannel;
+    private RedisBus bus;
+
+    private boolean managerRole;
 
     @Override
     public void onEnable() {
         INSTANCE = this;
 
-        // Config
         File configFile = new File(getDataFolder(), "config.yml");
         if (!configFile.exists()) {
             configFile.getParentFile().mkdirs();
@@ -43,6 +46,7 @@ public class ChatReactions extends JavaPlugin {
         }
         config = new Config(configFile);
 
+        managerRole = "manager".equalsIgnoreCase(config.getString("server.role"));
 
         setupDatabase();
 
@@ -55,31 +59,40 @@ public class ChatReactions extends JavaPlugin {
                     config.getString("redis.password")
             );
 
-            redisChannel = redisManager.createRegistry("chatreactions-update");
+            bus = new RedisBus(this, redisManager, "chatreactions");
+            bus.register(ReactionStartAction.class);
+            bus.register(ReactionTopLineAction.class);
+            bus.register(ReactionStopAction.class);
+            bus.register(ReactionCancelAction.class);
+            bus.register(ReactionWinAction.class);
+            bus.register(CheckAnswerEndpoint.class);
 
-            redisChannel.register(ReactionWinAction.class);
-
-            getLogger().info("Redis enabled and connected to " + config.getString("redis.host") + ":" + config.getInt("redis.port"));
+            getLogger().info("Redis enabled and connected to " +
+                    config.getString("redis.host") + ":" + config.getInt("redis.port"));
         } else {
             getLogger().info("Redis disabled.");
         }
 
         loadCacheManager();
         reactionManager = new ReactionManager();
-        Bukkit.getPluginManager().registerEvents(new PlayerListener(), this);
+
+        if (isManager()) {
+            reactionManager.startReactionTask(false);
+        }
+
+        Bukkit.getPluginManager().registerEvents(new PlayerListener(isManager()), this);
 
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             new PlaceHolderAPI().register();
         }
 
         CommandManager commandManager = new CommandManager(this, config, "chatreactions", "chatreactions.commands");
-        commandManager.addCommand(new StartCMD());
-        commandManager.addCommand(new StopCMD());
+        commandManager.addCommand(new StartCMD(isManager()));
+        commandManager.addCommand(new StopCMD(isManager()));
     }
 
     @Override
     public void onDisable() {
-        getReactionManager().disablePlugin();
         if (reactionManager != null) reactionManager.disablePlugin();
         if (dbManager != null) dbManager.closeConnection();
         if (redisManager != null) redisManager.close();
@@ -116,6 +129,18 @@ public class ChatReactions extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(cacheManager, this);
     }
 
+    public static ChatReactions get() {
+        return INSTANCE;
+    }
+
+    public boolean isManager() {
+        return managerRole;
+    }
+
+    public boolean isRedisEnabled() {
+        return redisManager != null;
+    }
+
     public Config getConfiguration() {
         return config;
     }
@@ -132,19 +157,11 @@ public class ChatReactions extends JavaPlugin {
         return cacheManager;
     }
 
-    public static ChatReactions get() {
-        return INSTANCE;
-    }
-
     public RedisManager getRedisManager() {
         return redisManager;
     }
 
-    public RedisChannelRegistry getRedisChannel() {
-        return redisChannel;
-    }
-
-    public boolean isRedisEnabled() {
-        return redisManager != null;
+    public RedisBus getBus() {
+        return bus;
     }
 }

@@ -40,4 +40,6 @@ public class ReversedWordReactionType implements ReactionTypeEntry {
     public List<String> getDescriptionMessages() {
         return ChatReactions.get().getConfiguration().getStringList("messages.chat.type_messages.reversed");
     }
+
+    public String expectedAnswer(){ return originalWord; }
 }

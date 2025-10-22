@@ -49,4 +49,7 @@ public class MathReactionType implements ReactionTypeEntry {
     public List<String> getDescriptionMessages() {
         return ChatReactions.get().getConfiguration().getStringList("messages.chat.type_messages.math");
     }
+
+    @Override
+    public String expectedAnswer(){ return answer; }
 }

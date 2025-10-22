@@ -11,6 +11,12 @@ import java.util.List;
 
 public class StopCMD implements CCommand {
 
+    private final boolean managerRole;
+
+    public StopCMD(boolean managerRole) {
+        this.managerRole = managerRole;
+    }
+
     @Override
     public List<String> getAliases() {
         return Collections.singletonList("stop");
@@ -28,7 +34,7 @@ public class StopCMD implements CCommand {
 
     @Override
     public String getDescription() {
-        return null;
+        return "Force l'arrêt immédiat de la réaction en cours.";
     }
 
     @Override
@@ -43,18 +49,33 @@ public class StopCMD implements CCommand {
 
     @Override
     public boolean canBeExecutedByConsole() {
-        return false;
+        return true;
     }
 
+    @Override
     public void execute(ChatReactions plugin, CommandSender sender, String[] args) {
         Config config = plugin.getConfiguration();
+
+        String msgNoManager = config.getString("messages.commands.stop.no_manager");
+        String msgNoReaction = config.getString("messages.commands.stop.no_reaction");
+        String msgSuccess = config.getString("messages.commands.stop.success");
+
+        if (!managerRole) {
+            sender.sendMessage(msgNoManager);
+            return;
+        }
+
+        if (plugin.getReactionManager().getCurrentReaction() == null) {
+            sender.sendMessage(msgNoReaction);
+            return;
+        }
+
         plugin.getReactionManager().stopCurrentReaction();
-        sender.sendMessage(config.getString("messages.commands.stop.success"));
+        sender.sendMessage(msgSuccess);
     }
 
     @Override
     public List<String> tabComplete(ChatReactions plugin, CommandSender sender, String[] args) {
         return new ArrayList<>();
     }
-
 }
