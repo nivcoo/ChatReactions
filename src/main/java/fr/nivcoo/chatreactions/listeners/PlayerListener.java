@@ -38,7 +38,7 @@ public class PlayerListener implements Listener {
         var ep = new CheckAnswerEndpoint(plugin.getConfiguration().getString("server.name"),
                 p.getUniqueId(), msg, System.currentTimeMillis());
         try {
-            var res = bus.call(ep, CheckAnswerRes.class).get(250, TimeUnit.MILLISECONDS);
+            var res = bus.call(ep, CheckAnswerRes.class).get(400, TimeUnit.MILLISECONDS);
             if (res != null && res.accepted()) e.setCancelled(true);
         } catch (Exception ignored) {
 

@@ -7,12 +7,7 @@ import fr.nivcoo.chatreactions.actions.ReactionTopLineAction;
 import fr.nivcoo.chatreactions.actions.rpc.CheckAnswerRes;
 import fr.nivcoo.chatreactions.reaction.types.ReactionTypeEntry;
 import fr.nivcoo.utilsz.config.Config;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.event.HoverEvent;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
-import org.bukkit.Sound;
-import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +22,8 @@ public class Reaction implements ReactionLike {
     private final Config config;
 
     private final ReactionTypeEntry type;
-    private final String word;
+    private final String displayToken;
+    private final String expectedAnswer;
     private final long startMillis;
     private final int onlinePlayersAtStart;
 
@@ -41,11 +37,13 @@ public class Reaction implements ReactionLike {
         this.manager = plugin.getReactionManager();
         this.config = plugin.getConfiguration();
         this.type = manager.selectRandomType();
-        this.word = type.generateWord();
+        this.displayToken = type.generateWord();
+        this.expectedAnswer = type.expectedAnswer();
         this.startMillis = System.currentTimeMillis();
         this.onlinePlayersAtStart = Bukkit.getOnlinePlayers().size();
     }
 
+    @Override
     public void start() {
         stopped = false;
         times.clear();
@@ -53,15 +51,15 @@ public class Reaction implements ReactionLike {
 
         List<String> typeLines = type.getDescriptionMessages();
         String startSound = config.getString("sounds.start");
-        String display = type.generateWord();
-        String answer  = type.expectedAnswer();
 
         if (plugin.isRedisEnabled()) {
-            plugin.getBus().publish(new ReactionStartAction(display, answer, typeLines, startSound));
+            plugin.getBus().publish(new ReactionStartAction(displayToken, expectedAnswer, typeLines, startSound));
         }
-        sendStartLocally(typeLines, startSound, display);
+
+        plugin.getDisplay().showStart(displayToken, typeLines, startSound);
     }
 
+    @Override
     public void stop() {
         if (stopped) return;
         stopped = true;
@@ -102,7 +100,7 @@ public class Reaction implements ReactionLike {
                 }
                 List<String> summary = config.getStringList("messages.chat.top.message");
                 finalMessage = manager.formatMultiline(summary)
-                        .replace("{0}", word)
+                        .replace("{0}", expectedAnswer)
                         .replace("{1}", topLines.toString());
             } else {
                 boolean allGiven = winnersList.size() >= targetWinners;
@@ -116,33 +114,30 @@ public class Reaction implements ReactionLike {
             plugin.getBus().publish(new ReactionStopAction(finalMessage));
         }
 
-        if (finalMessage != null && !finalMessage.isBlank()) {
-            Component component = LegacyComponentSerializer.legacySection().deserialize(finalMessage);
-            Bukkit.getServer().sendMessage(component);
-        }
+        plugin.getDisplay().showStop(finalMessage);
     }
 
-
+    @Override
     public CheckAnswerRes tryAccept(UUID player, String input, long atMillis) {
         if (stopped || player == null || input == null) {
-            return new CheckAnswerRes(false, null, 0, 0, null);
+            return CheckAnswerRes.empty();
         }
         if (!type.isCorrect(input)) {
-            return new CheckAnswerRes(false, null, 0, 0, null);
+            return CheckAnswerRes.empty();
         }
 
         double seconds = Math.round(((atMillis - startMillis) / 1000.0) * 100.0) / 100.0;
 
         Double prev = times.putIfAbsent(player, seconds);
         if (prev != null) {
-            return new CheckAnswerRes(false, null, 0, 0, null);
+            return CheckAnswerRes.empty();
         }
 
         order.add(player);
         int place = computePlace(player);
         int cap = manager.getRewardTopSize();
         if (place > cap) {
-            return new CheckAnswerRes(false, null, 0, 0, null);
+            return CheckAnswerRes.empty();
         }
 
         String topLine = getTopLineOfPlayer(player);
@@ -152,40 +147,22 @@ public class Reaction implements ReactionLike {
             plugin.getBus().publish(new ReactionTopLineAction(place, player, seconds, topLine, winSound));
         }
 
+        plugin.getDisplay().showTopLine(topLine, player, winSound);
+
         if (place >= cap) {
             Bukkit.getScheduler().runTask(plugin, manager::stopCurrentReaction);
         }
 
-        return new CheckAnswerRes(true, topLine, place, seconds, winSound);
+        return CheckAnswerRes.success(topLine, place, seconds, winSound);
     }
 
+    @Override
     public boolean tryAcceptLocal(UUID player, String input) {
         var res = tryAccept(player, input, System.currentTimeMillis());
         return res.accepted();
     }
 
-    private void sendStartLocally(List<String> typeLines, String startSound, String displayToken) {
-        List<String> finalStartMessages = new ArrayList<>();
-        for (String line : config.getStringList("messages.chat.start_messages.messages")) {
-            if (line.contains("{type_lines}")) finalStartMessages.addAll(typeLines);
-            else finalStartMessages.add(line);
-        }
-        List<String> hoverMessages = config.getStringList("messages.chat.start_messages.hover");
-        String messageText = String.join("\n", finalStartMessages);
-        String hoverTextFormatted = String.join("\n", hoverMessages).replace("{0}", displayToken);
-
-        Component hoverComponent = LegacyComponentSerializer.legacySection().deserialize(hoverTextFormatted);
-        Component messageComponent = LegacyComponentSerializer.legacySection()
-                .deserialize(messageText)
-                .hoverEvent(HoverEvent.showText(hoverComponent));
-
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            p.sendMessage(messageComponent);
-            try { p.playSound(p.getLocation(), Sound.valueOf(startSound), 0.4f, 1.7f); } catch (IllegalArgumentException ignored) {}
-        }
-    }
-
-    public String getTopLineOfPlayer(UUID uuid) {
+    private String getTopLineOfPlayer(UUID uuid) {
         int place = computePlace(uuid);
         String playerName = plugin.getCacheManager().resolvePlayerName(uuid);
         int rewardTop = manager.getRewardTopSize();
@@ -221,6 +198,7 @@ public class Reaction implements ReactionLike {
         return config.getString("rewards.top." + place + ".message", "");
     }
 
+    @Override
     public boolean isCorrect(String input) {
         return type.isCorrect(input);
     }

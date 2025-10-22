@@ -70,7 +70,7 @@ public class StartCMD implements CCommand {
             return;
         }
 
-        plugin.getReactionManager().startReactionTask(true);
+        plugin.getReactionManager().startReactionTask();
         sender.sendMessage(msgSuccess);
     }
 

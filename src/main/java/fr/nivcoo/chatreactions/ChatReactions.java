@@ -8,6 +8,7 @@ import fr.nivcoo.chatreactions.command.commands.StopCMD;
 import fr.nivcoo.chatreactions.listeners.PlayerListener;
 import fr.nivcoo.chatreactions.placeholder.PlaceHolderAPI;
 import fr.nivcoo.chatreactions.reaction.ReactionManager;
+import fr.nivcoo.chatreactions.ui.ReactionDisplay;
 import fr.nivcoo.chatreactions.utils.Database;
 import fr.nivcoo.utilsz.commands.CommandManager;
 import fr.nivcoo.utilsz.config.Config;
@@ -32,6 +33,7 @@ public class ChatReactions extends JavaPlugin {
 
     private RedisManager redisManager;
     private RedisBus bus;
+    private ReactionDisplay display;
 
     private boolean managerRole;
 
@@ -63,7 +65,6 @@ public class ChatReactions extends JavaPlugin {
             bus.register(ReactionStartAction.class);
             bus.register(ReactionTopLineAction.class);
             bus.register(ReactionStopAction.class);
-            bus.register(ReactionCancelAction.class);
             bus.register(ReactionWinAction.class);
             bus.register(CheckAnswerEndpoint.class);
 
@@ -75,10 +76,7 @@ public class ChatReactions extends JavaPlugin {
 
         loadCacheManager();
         reactionManager = new ReactionManager();
-
-        if (isManager()) {
-            reactionManager.startReactionTask(false);
-        }
+        display = new ReactionDisplay(this);
 
         Bukkit.getPluginManager().registerEvents(new PlayerListener(isManager()), this);
 
@@ -163,5 +161,9 @@ public class ChatReactions extends JavaPlugin {
 
     public RedisBus getBus() {
         return bus;
+    }
+
+    public ReactionDisplay getDisplay() {
+        return display;
     }
 }
