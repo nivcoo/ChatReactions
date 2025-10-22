@@ -3,12 +3,8 @@ package fr.nivcoo.chatreactions.listeners;
 import fr.nivcoo.chatreactions.ChatReactions;
 import fr.nivcoo.chatreactions.actions.rpc.CheckAnswerEndpoint;
 import fr.nivcoo.chatreactions.actions.rpc.CheckAnswerRes;
-import fr.nivcoo.chatreactions.reaction.Reaction;
-import fr.nivcoo.utilsz.redis.RedisManager;
-import fr.nivcoo.utilsz.redis.bus.RedisBus;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -42,7 +38,7 @@ public class PlayerListener implements Listener {
         var ep = new CheckAnswerEndpoint(plugin.getConfiguration().getString("server.name"),
                 p.getUniqueId(), msg, System.currentTimeMillis());
         try {
-            var res = bus.call(ep, CheckAnswerRes.class).get(250, java.util.concurrent.TimeUnit.MILLISECONDS);
+            var res = bus.call(ep, CheckAnswerRes.class).get(250, TimeUnit.MILLISECONDS);
             if (res != null && res.accepted()) e.setCancelled(true);
         } catch (Exception ignored) {
 
