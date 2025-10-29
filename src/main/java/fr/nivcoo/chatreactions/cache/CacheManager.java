@@ -8,6 +8,7 @@ import java.util.*;
 
 import fr.nivcoo.edenplayers.EdenPlayers;
 import fr.nivcoo.edenplayers.api.AEdenPlayers;
+import fr.nivcoo.edenplayers.api.EdenPlayersAPI;
 import fr.nivcoo.edenplayers.api.model.PlayerProfile;
 import org.bukkit.event.Listener;
 
@@ -29,7 +30,7 @@ public class CacheManager implements Listener {
 
 
     public String resolvePlayerName(UUID uuid) {
-        AEdenPlayers api = EdenPlayers.get();
+        AEdenPlayers api = EdenPlayersAPI.get();
         if (api != null) {
             Optional<PlayerProfile> optProfile = api.getProfileCached(uuid);
             if (optProfile.isPresent()) {
